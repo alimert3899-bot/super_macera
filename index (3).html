@@ -1,0 +1,641 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Süper Macera - Mario</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+        body {
+            background-color: #111;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            overflow: hidden;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        #game-container {
+            position: relative;
+            width: 100vw;
+            max-width: 420px;
+            height: 100vh;
+            max-height: 750px;
+            background: linear-gradient(to bottom, #3a7bd5, #3a6073);
+            box-shadow: 0 0 25px rgba(0,0,0,0.9);
+            overflow: hidden;
+        }
+        canvas {
+            width: 100%;
+            height: 100%;
+            display: block;
+        }
+
+        /* OYUN İÇİ ARAYÜZ (HUD) */
+        .hud {
+            position: absolute;
+            top: 15px;
+            left: 15px;
+            color: #fff;
+            font-size: 18px;
+            font-weight: bold;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.8);
+            z-index: 10;
+            display: none;
+        }
+        .controls {
+            position: absolute;
+            bottom: 20px;
+            width: 100%;
+            padding: 0 20px;
+            display: none;
+            justify-content: space-between;
+            align-items: center;
+            z-index: 10;
+        }
+        .d-pad {
+            display: flex;
+            gap: 15px;
+        }
+        .btn {
+            width: 65px;
+            height: 65px;
+            background: rgba(255, 255, 255, 0.25);
+            border: 2px solid rgba(255, 255, 255, 0.5);
+            border-radius: 50%;
+            color: white;
+            font-size: 24px;
+            font-weight: bold;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            backdrop-filter: blur(5px);
+            touch-action: manipulation;
+            cursor: pointer;
+        }
+        .btn:active {
+            background: rgba(255, 255, 255, 0.5);
+            transform: scale(0.95);
+        }
+        .btn-jump {
+            width: 75px;
+            height: 75px;
+            background: rgba(231, 76, 60, 0.6);
+            border-color: rgba(255, 255, 255, 0.7);
+        }
+
+        /* EKRAN MODALLARI & MENÜLER */
+        .screen {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(15, 23, 42, 0.95);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            color: white;
+            z-index: 30;
+            text-align: center;
+            padding: 20px;
+        }
+        .screen h1 {
+            font-size: 36px;
+            margin-bottom: 25px;
+            color: #f1c40f;
+            text-shadow: 0 4px 10px rgba(241, 196, 15, 0.4);
+            letter-spacing: 1px;
+        }
+
+        .btn-main {
+            width: 220px;
+            padding: 15px;
+            margin: 10px 0;
+            font-size: 18px;
+            font-weight: bold;
+            color: white;
+            background: #2ecc71;
+            border: none;
+            border-radius: 30px;
+            cursor: pointer;
+            box-shadow: 0 5px 15px rgba(46, 204, 113, 0.4);
+            transition: all 0.2s;
+        }
+        .btn-main:active {
+            transform: scale(0.96);
+        }
+        .btn-disabled {
+            background: #475569 !important;
+            color: #94a3b8 !important;
+            box-shadow: none !important;
+            cursor: not-allowed;
+            opacity: 0.7;
+        }
+
+        /* BÖLÜM SEÇME GRID */
+        .level-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 12px;
+            width: 100%;
+            max-width: 320px;
+            margin-bottom: 25px;
+        }
+        .level-btn {
+            aspect-ratio: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 18px;
+            font-weight: bold;
+            border-radius: 12px;
+            border: 2px solid transparent;
+            cursor: pointer;
+        }
+        .level-active {
+            background: #e67e22;
+            color: white;
+            border-color: #f39c12;
+            box-shadow: 0 0 15px rgba(230, 126, 34, 0.6);
+        }
+        .level-locked {
+            background: #1e293b;
+            color: #475569;
+            border-color: #334155;
+            cursor: not-allowed;
+        }
+
+        /* UYARI BİLDİRİMİ (TOAST) */
+        #toast {
+            position: absolute;
+            bottom: 30px;
+            background: #e74c3c;
+            color: white;
+            padding: 12px 20px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: bold;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.5);
+            display: none;
+            z-index: 50;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .stars { font-size: 38px; margin: 10px 0; color: #f1c40f; }
+    </style>
+</head>
+<body>
+
+<div id="game-container">
+    <div class="hud" id="hud">Altın: <span id="coin-count">0</span> / <span id="max-coins">0</span></div>
+    <canvas id="canvas"></canvas>
+    
+    <!-- Ekran Üstü Kontroller -->
+    <div class="controls" id="controls">
+        <div class="d-pad">
+            <div class="btn" id="btn-left">◄</div>
+            <div class="btn" id="btn-right">►</div>
+        </div>
+        <div class="btn btn-jump" id="btn-jump">▲</div>
+    </div>
+
+    <!-- 1. ANA MENÜ -->
+    <div id="main-menu" class="screen">
+        <h1>SÜPER MACERA</h1>
+        <button class="btn-main" onclick="openLevelSelect()">BAŞLA</button>
+        <button class="btn-main btn-disabled" onclick="showToast('Ayarlar gelecek güncellemede eklenecektir!')">AYARLAR</button>
+    </div>
+
+    <!-- 2. BÖLÜM SEÇME MENÜSÜ -->
+    <div id="level-menu" class="screen" style="display: none;">
+        <h2 style="margin-bottom: 20px; color: #38bdf8;">Bölüm Seç</h2>
+        <div class="level-grid" id="level-grid"></div>
+        <button class="btn-main" style="width: 150px; background: #64748b;" onclick="openMainMenu()">Geri</button>
+    </div>
+
+    <!-- 3. GAME OVER EKRANI -->
+    <div id="game-over" class="screen" style="display: none;">
+        <h1 style="color: #e74c3c;">ÖLDÜN!</h1>
+        <p style="margin-bottom: 20px; color: #cbd5e1;">Düştün veya Yaratığa Çarptın!</p>
+        <button class="btn-main" onclick="restartGame()">Tekrar Oyna</button>
+        <button class="btn-main" style="background: #64748b;" onclick="openMainMenu()">Ana Menü</button>
+    </div>
+
+    <!-- 4. KAZANMA EKRANI -->
+    <div id="win-screen" class="screen" style="display: none;">
+        <h1 style="color: #2ecc71;">TEBRİKLER!</h1>
+        <p>Bölüm 1 Tamamlandı!</p>
+        <div class="stars" id="star-rating">☆☆☆</div>
+        <p id="coin-result-text" style="font-size: 14px; color: #cbd5e1; margin-bottom: 20px;"></p>
+        
+        <button class="btn-main" onclick="restartGame()">Tekrar Oyna</button>
+        <button class="btn-main btn-disabled" onclick="showToast('Sıradaki bölüm gelecek güncellemede gelecek!')">Sıradaki Bölüm</button>
+        <button class="btn-main" style="background: #64748b;" onclick="openMainMenu()">Ana Menü</button>
+    </div>
+
+    <!-- Bildirim Balonu -->
+    <div id="toast"></div>
+</div>
+
+<script>
+const canvas = document.getElementById('canvas');
+const ctx = canvas.getContext('2d');
+
+// UI Elemanları
+const hud = document.getElementById('hud');
+const controls = document.getElementById('controls');
+const mainMenu = document.getElementById('main-menu');
+const levelMenu = document.getElementById('level-menu');
+const gameOverScreen = document.getElementById('game-over');
+const winScreen = document.getElementById('win-screen');
+const levelGrid = document.getElementById('level-grid');
+const coinCountSpan = document.getElementById('coin-count');
+const maxCoinsSpan = document.getElementById('max-coins');
+const starRating = document.getElementById('star-rating');
+const coinResultText = document.getElementById('coin-result-text');
+const toast = document.getElementById('toast');
+
+// Oyun Boyutları Ayarlama
+function resizeCanvas() {
+    canvas.width = canvas.parentElement.clientWidth;
+    canvas.height = canvas.parentElement.clientHeight;
+}
+resizeCanvas();
+window.addEventListener('resize', resizeCanvas);
+
+// Oyun Durumu ve Değişkenleri
+let gameState = 'MENU'; // MENU, LEVEL_SELECT, PLAYING, GAMEOVER, WIN
+let currentLevel = 1;
+const totalLevels = 8;
+
+let player = {
+    x: 50,
+    y: 0,
+    width: 30,
+    height: 40,
+    vx: 0,
+    vy: 0,
+    speed: 4,
+    jumpForce: 12,
+    grounded: false
+};
+
+const gravity = 0.5;
+let cameraX = 0;
+let levelWidth = 2000;
+
+let platforms = [];
+let coins = [];
+let enemies = [];
+let flagPole = { x: 1900, y: 0, width: 10, height: 300 };
+
+let keys = { left: false, right: false, up: false };
+let collectedCoins = 0;
+let totalLevelCoins = 0;
+
+// Bölüm Oluşturucu (Örnek Yapı)
+function initLevel(levelNum) {
+    player.x = 50;
+    player.y = canvas.height - 150;
+    player.vx = 0;
+    player.vy = 0;
+    collectedCoins = 0;
+    cameraX = 0;
+    
+    platforms = [
+        // Zemin platfomları
+        { x: 0, y: canvas.height - 60, width: 600, height: 60 },
+        { x: 700, y: canvas.height - 60, width: 500, height: 60 },
+        { x: 1300, y: canvas.height - 60, width: 700, height: 60 },
+        // Havada asılı duran platformlar ve kutular
+        { x: 200, y: canvas.height - 180, width: 120, height: 20 },
+        { x: 400, y: canvas.height - 260, width: 100, height: 20 },
+        { x: 800, y: canvas.height - 180, width: 150, height: 20 },
+        { x: 1050, y: canvas.height - 240, width: 120, height: 20 },
+        { x: 1450, y: canvas.height - 180, width: 160, height: 20 }
+    ];
+    
+    coins = [
+        { x: 250, y: canvas.height - 220, width: 15, height: 15, collected: false },
+        { x: 440, y: canvas.height - 300, width: 15, height: 15, collected: false },
+        { x: 850, y: canvas.height - 220, width: 15, height: 15, collected: false },
+        { x: 1100, y: canvas.height - 280, width: 15, height: 15, collected: false },
+        { x: 1500, y: canvas.height - 220, width: 15, height: 15, collected: false }
+    ];
+    
+    enemies = [
+        { x: 450, y: canvas.height - 90, width: 30, height: 30, vx: -1.5, minX: 350, maxX: 550 },
+        { x: 900, y: canvas.height - 90, width: 30, height: 30, vx: -2, minX: 750, maxX: 1100 },
+        { x: 1600, y: canvas.height - 90, width: 30, height: 30, vx: -1, minX: 1400, maxX: 1800 }
+    ];
+    
+    flagPole.x = 1900;
+    flagPole.y = canvas.height - 360;
+    
+    totalLevelCoins = coins.length;
+    updateHUD();
+}
+
+function updateHUD() {
+    coinCountSpan.innerText = collectedCoins;
+    maxCoinsSpan.innerText = totalLevelCoins;
+}
+
+// Menü Geçiş Fonksiyonları
+function openMainMenu() {
+    hideAllScreens();
+    mainMenu.style.display = 'flex';
+    gameState = 'MENU';
+}
+
+function openLevelSelect() {
+    hideAllScreens();
+    levelMenu.style.display = 'flex';
+    gameState = 'LEVEL_SELECT';
+    
+    levelGrid.innerHTML = '';
+    for(let i = 1; i <= totalLevels; i++) {
+        const btn = document.createElement('div');
+        if(i === 1) {
+            btn.className = 'level-btn level-active';
+            btn.onclick = () => startGame(i);
+        } else {
+            btn.className = 'level-btn level-locked';
+            btn.onclick = () => showToast('Bu bölüm henüz kilitli!');
+        }
+        btn.innerText = i;
+        levelGrid.appendChild(btn);
+    }
+}
+
+function startGame(levelNum) {
+    currentLevel = levelNum;
+    hideAllScreens();
+    hud.style.display = 'block';
+    controls.style.display = 'flex';
+    gameState = 'PLAYING';
+    initLevel(levelNum);
+}
+
+function restartGame() {
+    startGame(currentLevel);
+}
+
+function triggerWin() {
+    gameState = 'WIN';
+    hud.style.display = 'none';
+    controls.style.display = 'none';
+    hideAllScreens();
+    winScreen.style.display = 'flex';
+    
+    let stars = '☆';
+    if(collectedCoins === totalLevelCoins) stars = '⭐⭐⭐';
+    else if(collectedCoins >= totalLevelCoins * 0.6) stars = '⭐⭐☆';
+    else if(collectedCoins > 0) stars = '⭐☆☆';
+    else stars = '☆☆☆';
+    
+    starRating.innerText = stars;
+    coinResultText.innerText = `Toplam ${totalLevelCoins} altından ${collectedCoins} tanesini topladın!`;
+}
+
+function triggerGameOver() {
+    gameState = 'GAMEOVER';
+    hud.style.display = 'none';
+    controls.style.display = 'none';
+    hideAllScreens();
+    gameOverScreen.style.display = 'flex';
+}
+
+function hideAllScreens() {
+    mainMenu.style.display = 'none';
+    levelMenu.style.display = 'none';
+    gameOverScreen.style.display = 'none';
+    winScreen.style.display = 'none';
+}
+
+function showToast(msg) {
+    toast.innerText = msg;
+    toast.style.display = 'block';
+    setTimeout(() => { toast.style.display = 'none'; }, 2000);
+}
+
+// Girdiler / Kontroller (Klavye & Dokunmatik)
+window.addEventListener('keydown', (e) => {
+    if(e.code === 'ArrowLeft' || e.code === 'KeyA') keys.left = true;
+    if(e.code === 'ArrowRight' || e.code === 'KeyD') keys.right = true;
+    if(e.code === 'ArrowUp' || e.code === 'KeyW' || e.code === 'Space') keys.up = true;
+});
+
+window.addEventListener('keyup', (e) => {
+    if(e.code === 'ArrowLeft' || e.code === 'KeyA') keys.left = false;
+    if(e.code === 'ArrowRight' || e.code === 'KeyD') keys.right = false;
+    if(e.code === 'ArrowUp' || e.code === 'KeyW' || e.code === 'Space') keys.up = false;
+});
+
+// Mobil Dokunmatik Butonları
+const bLeft = document.getElementById('btn-left');
+const bRight = document.getElementById('btn-right');
+const bJump = document.getElementById('btn-jump');
+
+bLeft.addEventListener('touchstart', (e) => { e.preventDefault(); keys.left = true; });
+bLeft.addEventListener('touchend', () => keys.left = false);
+bRight.addEventListener('touchstart', (e) => { e.preventDefault(); keys.right = true; });
+bRight.addEventListener('touchend', () => keys.right = false);
+bJump.addEventListener('touchstart', (e) => { e.preventDefault(); keys.up = true; });
+bJump.addEventListener('touchend', () => keys.up = false);
+
+// Çarpışma Testi Algoritması
+function checkCollision(rect1, rect2) {
+    return rect1.x < rect2.x + rect2.width &&
+           rect1.x + rect1.width > rect2.x &&
+           rect1.y < rect2.y + rect2.height &&
+           rect1.y + rect1.height > rect2.y;
+}
+
+// Ana Oyun Döngüsü Güncellemesi
+function update() {
+    if(gameState !== 'PLAYING') return;
+
+    // Yatay Hareket
+    if (keys.left) player.vx = -player.speed;
+    else if (keys.right) player.vx = player.speed;
+    else player.vx = 0;
+
+    // Dikey Hareket (Yerçekimi & Zıplama)
+    player.vy += gravity;
+    if (keys.up && player.grounded) {
+        player.vy = -player.jumpForce;
+        player.grounded = false;
+    }
+
+    player.x += player.vx;
+    player.y += player.vy;
+    player.grounded = false;
+
+    // Ekran Sınırları ve Boşluğa Düşme Kontrolü
+    if (player.x < 0) player.x = 0;
+    if (player.y > canvas.height) {
+        triggerGameOver();
+        return;
+    }
+
+    // Platform Çarpışma Hesaplamaları
+    platforms.forEach(p => {
+        if (checkCollision(player, p)) {
+            // Taban Basması (Yukarıdan Aşağıya Düşüş)
+            if (player.vy > 0 && player.y + player.height - player.vy <= p.y + 10) {
+                player.y = p.y - player.height;
+                player.vy = 0;
+                player.grounded = true;
+            }
+            // Alttan Kafayı Vurma
+            else if (player.vy < 0 && player.y - player.vy >= p.y + p.height - 10) {
+                player.y = p.y + p.height;
+                player.vy = 0;
+            }
+            // Yan Çarpışmalar
+            else if (player.vx > 0) {
+                player.x = p.x - player.width;
+            } else if (player.vx < 0) {
+                player.x = p.x + p.width;
+            }
+        }
+    });
+
+    // Altın Toplama
+    coins.forEach(coin => {
+        if (!coin.collected && checkCollision(player, coin)) {
+            coin.collected = true;
+            collectedCoins++;
+            updateHUD();
+        }
+    });
+
+    // Düşman Hareketleri ve Etkileşimi
+    enemies.forEach(enemy => {
+        enemy.x += enemy.vx;
+        if(enemy.x <= enemy.minX || enemy.x + enemy.width >= enemy.maxX) {
+            enemy.vx *= -1;
+        }
+
+        if (checkCollision(player, enemy)) {
+            // Üzerine basıp öldürme
+            if (player.vy > 0 && player.y + player.height - player.vy <= enemy.y + 15) {
+                player.vy = -6; // Yukarı zıplat
+                enemies = enemies.filter(e => e !== enemy);
+            } else {
+                triggerGameOver();
+            }
+        }
+    });
+
+    // Kamera Takibi
+    if (player.x > canvas.width / 2 && player.x < levelWidth - canvas.width / 2) {
+        cameraX = player.x - canvas.width / 2;
+    } else if (player.x <= canvas.width / 2) {
+        cameraX = 0;
+    } else {
+        cameraX = levelWidth - canvas.width;
+    }
+
+    // Bitiş Bayrağı Kontrolü
+    if (checkCollision(player, flagPole)) {
+        triggerWin();
+    }
+}
+
+// Çizim Fonksiyonu
+function draw() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    ctx.save();
+    ctx.translate(-cameraX, 0);
+
+    // Arka Plan Dekorasyonları (Bulut/Güneş vb. Basit Çizimler)
+    ctx.fillStyle = 'rgba(255,255,255,0.3)';
+    ctx.beginPath();
+    ctx.arc(300, 100, 30, 0, Math.PI * 2);
+    ctx.arc(340, 100, 40, 0, Math.PI * 2);
+    ctx.arc(380, 100, 30, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.fillStyle = 'rgba(255,255,255,0.2)';
+    ctx.beginPath();
+    ctx.arc(900, 150, 40, 0, Math.PI * 2);
+    ctx.arc(950, 150, 50, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Platformları Çiz
+    platforms.forEach(p => {
+        ctx.fillStyle = p.height > 30 ? '#8e44ad' : '#2c3e50'; // Zemin rengi ile kutu rengi farklı
+        ctx.fillRect(p.x, p.y, p.width, p.height);
+        // Üst kenar çizgisi
+        ctx.fillStyle = '#9b59b6';
+        ctx.fillRect(p.x, p.y, p.width, 4);
+    });
+
+    // Altınları Çiz
+    coins.forEach(coin => {
+        if (!coin.collected) {
+            ctx.fillStyle = '#f1c40f';
+            ctx.beginPath();
+            ctx.arc(coin.x + coin.width/2, coin.y + coin.height/2, coin.width/2, 0, Math.PI * 2);
+            ctx.fill();
+            // İç halka detayı
+            ctx.strokeStyle = '#f39c12';
+            ctx.lineWidth = 1.5;
+            ctx.beginPath();
+            ctx.arc(coin.x + coin.width/2, coin.y + coin.height/2, coin.width/4, 0, Math.PI * 2);
+            ctx.stroke();
+        }
+    });
+
+    // Düşmanları Çiz
+    enemies.forEach(enemy => {
+        ctx.fillStyle = '#fc5c65';
+        ctx.fillRect(enemy.x, enemy.y, enemy.width, enemy.height);
+        // Göz detayları
+        ctx.fillStyle = '#fff';
+        ctx.fillRect(enemy.x + 4, enemy.y + 6, 6, 8);
+        ctx.fillRect(enemy.x + enemy.width - 10, enemy.y + 6, 6, 8);
+    });
+
+    // Bitiş Direği / Bayrak Çizimi
+    ctx.fillStyle = '#7f8c8d';
+    ctx.fillRect(flagPole.x, flagPole.y, flagPole.width, flagPole.height);
+    ctx.fillStyle = '#2ecc71';
+    ctx.beginPath();
+    ctx.moveTo(flagPole.x + flagPole.width, flagPole.y);
+    ctx.lineTo(flagPole.x + flagPole.width + 40, flagPole.y + 25);
+    ctx.lineTo(flagPole.x + flagPole.width, flagPole.y + 50);
+    ctx.fill();
+
+    // Oyuncuyu Çiz (Karakter)
+    ctx.fillStyle = '#e74c3c'; // Mario Kırmızısı
+    ctx.fillRect(player.x, player.y, player.width, player.height);
+    // Şapka/Yüz Detayı (Basit Blok)
+    ctx.fillStyle = '#ff7675';
+    ctx.fillRect(player.x + 5, player.y + 5, player.width - 10, 12);
+    ctx.fillStyle = '#74b9ff'; // Pantolon askısı mavi
+    ctx.fillRect(player.x, player.y + 25, player.width, player.height - 25);
+
+    ctx.restore();
+}
+
+// Oyun Döngüsü Tetikleyicisi
+function gameLoop() {
+    update();
+    draw();
+    requestAnimationFrame(gameLoop);
+}
+
+// İlk Çalıştırma
+gameLoop();
+</script>
+</body>
+</html>
