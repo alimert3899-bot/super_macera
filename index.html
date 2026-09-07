@@ -100,7 +100,7 @@
             justify-content: center;
             align-items: center;
             color: white;
-            z-index: 30;
+            z-index: 999;
             text-align: center;
             padding: 20px;
         }
@@ -125,7 +125,8 @@
             cursor: pointer;
             box-shadow: 0 5px 15px rgba(46, 204, 113, 0.4);
             transition: all 0.2s;
-            z-index: 40;
+            z-index: 1000;
+            pointer-events: auto;
         }
         .btn-main:active {
             transform: scale(0.96);
@@ -146,6 +147,7 @@
             width: 100%;
             max-width: 320px;
             margin-bottom: 25px;
+            z-index: 1000;
         }
         .level-btn {
             aspect-ratio: 1;
@@ -183,7 +185,7 @@
             font-weight: bold;
             box-shadow: 0 5px 15px rgba(0,0,0,0.5);
             display: none;
-            z-index: 50;
+            z-index: 2000;
         }
 
         .stars { font-size: 38px; margin: 10px 0; color: #f1c40f; }
@@ -207,23 +209,23 @@
     <!-- 1. ANA MENÜ -->
     <div id="main-menu" class="screen">
         <h1>SÜPER MACERA</h1>
-        <button class="btn-main" id="start-btn">BAŞLA</button>
-        <button class="btn-main btn-disabled" id="settings-btn">AYARLAR</button>
+        <button class="btn-main" onclick="openLevelSelect()">BAŞLA</button>
+        <button class="btn-main btn-disabled" onclick="showToast('Ayarlar gelecek güncellemede eklenecektir!')">AYARLAR</button>
     </div>
 
     <!-- 2. BÖLÜM SEÇME MENÜSÜ -->
     <div id="level-menu" class="screen" style="display: none;">
         <h2 style="margin-bottom: 20px; color: #38bdf8;">Bölüm Seç</h2>
         <div class="level-grid" id="level-grid"></div>
-        <button class="btn-main" id="back-btn" style="width: 150px; background: #64748b;">Geri</button>
+        <button class="btn-main" style="width: 150px; background: #64748b;" onclick="openMainMenu()">Geri</button>
     </div>
 
     <!-- 3. GAME OVER EKRANI -->
     <div id="game-over" class="screen" style="display: none;">
         <h1 style="color: #e74c3c;">ÖLDÜN!</h1>
         <p style="margin-bottom: 20px; color: #cbd5e1;">Düştün veya Yaratığa Çarptın!</p>
-        <button class="btn-main" id="restart-btn">Tekrar Oyna</button>
-        <button class="btn-main" id="gameover-menu-btn" style="background: #64748b;">Ana Menü</button>
+        <button class="btn-main" onclick="restartGame()">Tekrar Oyna</button>
+        <button class="btn-main" style="background: #64748b;" onclick="openMainMenu()">Ana Menü</button>
     </div>
 
     <!-- 4. KAZANMA EKRANI -->
@@ -233,8 +235,8 @@
         <div class="stars" id="star-rating">☆☆☆</div>
         <p id="coin-result-text" style="font-size: 14px; color: #cbd5e1; margin-bottom: 20px;"></p>
         
-        <button class="btn-main" id="win-restart-btn">Tekrar Oyna</button>
-        <button class="btn-main" id="win-menu-btn" style="background: #64748b;">Ana Menü</button>
+        <button class="btn-main" onclick="restartGame()">Tekrar Oyna</button>
+        <button class="btn-main" style="background: #64748b;" onclick="openMainMenu()">Ana Menü</button>
     </div>
 
     <!-- Bildirim Balonu -->
@@ -317,28 +319,12 @@ for (let i = 0; i < 2300; i += 4) {
 
 maxCoinsDisplay.innerText = blocks.length;
 
-// --- DOKUNMATİK VE TIKLAMA OLAYLARI (BUTONLAR İÇİN) ---
-function addClickListener(elementId, callback) {
-    const el = document.getElementById(elementId);
-    if (!el) return;
-    el.addEventListener('click', (e) => { e.preventDefault(); callback(); });
-    el.addEventListener('touchend', (e) => { e.preventDefault(); callback(); });
-}
-
-addClickListener('start-btn', openLevelSelect);
-addClickListener('settings-btn', () => showToast('Ayarlar gelecek güncellemede eklenecektir!'));
-addClickListener('back-btn', openMainMenu);
-addClickListener('restart-btn', restartGame);
-addClickListener('gameover-menu-btn', openMainMenu);
-addClickListener('win-restart-btn', restartGame);
-addClickListener('win-menu-btn', openMainMenu);
-
-// Oyun İçi Yön Tuşları
+// --- DOKUNMATİK VE KLAVYE KONTROLLERİ ---
 function bindTouchButton(id, keyName) {
     const btn = document.getElementById(id);
     if (!btn) return;
-    btn.addEventListener('touchstart', (e) => { e.preventDefault(); keys[keyName] = true; });
-    btn.addEventListener('touchend', (e) => { e.preventDefault(); keys[keyName] = false; });
+    btn.addEventListener('touchstart', (e) => { e.preventDefault(); keys[keyName] = true; }, {passive: false});
+    btn.addEventListener('touchend', (e) => { e.preventDefault(); keys[keyName] = false; }, {passive: false});
     btn.addEventListener('mousedown', () => { keys[keyName] = true; });
     btn.addEventListener('mouseup', () => { keys[keyName] = false; });
 }
@@ -386,12 +372,10 @@ function renderLevelGrid() {
         
         if (i === 1) {
             btn.classList.add('level-active');
-            btn.addEventListener('click', () => startLevel(1));
-            btn.addEventListener('touchend', () => startLevel(1));
+            btn.onclick = () => startLevel(1);
         } else {
             btn.classList.add('level-locked');
-            btn.addEventListener('click', () => showToast('Bu bölüm gelecek güncellemede açılacaktır!'));
-            btn.addEventListener('touchend', () => showToast('Bu bölüm gelecek güncellemede açılacaktır!'));
+            btn.onclick = () => showToast('Bu bölüm gelecek güncellemede açılacaktır!');
         }
         levelGrid.appendChild(btn);
     }
@@ -637,4 +621,31 @@ function drawParticles() {
         p.y += p.vy;
         p.alpha -= 0.02;
 
-        ctx
+        ctx.fillStyle = `rgba(${p.color || '241, 196, 15'}, ${p.alpha})`;
+        ctx.beginPath();
+        ctx.arc(p.x - cameraX, p.y, p.size, 0, Math.PI * 2);
+        ctx.fill();
+
+        if (p.alpha <= 0) particles.splice(index, 1);
+    });
+}
+
+// --- OYUN GÜNCELLEME DÖNGÜSÜ ---
+
+function update() {
+    if (!isPlaying || isGameOver || isGameWon) return;
+
+    gameTime += 0.05;
+
+    if (keys.left) player.vx = -player.speed;
+    else if (keys.right) player.vx = player.speed;
+    else player.vx *= 0.65;
+
+    player.vy += gravity;
+    player.x += player.vx;
+    player.y += player.vy;
+
+    if (player.x - cameraX > 200) {
+        cameraX = player.x - 200;
+    } else if (player.x - cameraX < 80 && cameraX > 0) {
+        cameraX = pla
