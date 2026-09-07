@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Süper Macera - Mario</title>
+    <title>Gerçekçi Mario - Dikey Oyun</title>
     <style>
         * {
             box-sizing: border-box;
@@ -19,7 +19,7 @@
             align-items: center;
             height: 100vh;
             overflow: hidden;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-family: Arial, sans-serif;
         }
         #game-container {
             position: relative;
@@ -28,7 +28,7 @@
             height: 100vh;
             max-height: 750px;
             background: linear-gradient(to bottom, #3a7bd5, #3a6073);
-            box-shadow: 0 0 25px rgba(0,0,0,0.9);
+            box-shadow: 0 0 20px rgba(0,0,0,0.8);
             overflow: hidden;
         }
         canvas {
@@ -36,25 +36,23 @@
             height: 100%;
             display: block;
         }
-
-        /* OYUN İÇİ ARAYÜZ (HUD) */
+        /* UI Ve Kontroller */
         .hud {
             position: absolute;
             top: 15px;
             left: 15px;
             color: #fff;
-            font-size: 18px;
+            font-size: 20px;
             font-weight: bold;
             text-shadow: 2px 2px 4px rgba(0,0,0,0.8);
             z-index: 10;
-            display: none;
         }
         .controls {
             position: absolute;
             bottom: 20px;
             width: 100%;
             padding: 0 20px;
-            display: none;
+            display: flex;
             justify-content: space-between;
             align-items: center;
             z-index: 10;
@@ -77,7 +75,6 @@
             align-items: center;
             backdrop-filter: blur(5px);
             touch-action: manipulation;
-            cursor: pointer;
         }
         .btn:active {
             background: rgba(255, 255, 255, 0.5);
@@ -89,114 +86,42 @@
             background: rgba(231, 76, 60, 0.6);
             border-color: rgba(255, 255, 255, 0.7);
         }
-
-        /* EKRAN MODALLARI & MENÜLER */
-        .screen {
+        .btn-jump:active {
+            background: rgba(231, 76, 60, 0.9);
+        }
+        #game-over {
             position: absolute;
             top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(15, 23, 42, 0.95);
-            display: flex;
+            background: rgba(0,0,0,0.75);
+            display: none;
             flex-direction: column;
             justify-content: center;
             align-items: center;
             color: white;
-            z-index: 30;
-            text-align: center;
-            padding: 20px;
+            z-index: 20;
         }
-        .screen h1 {
-            font-size: 36px;
-            margin-bottom: 25px;
-            color: #f1c40f;
-            text-shadow: 0 4px 10px rgba(241, 196, 15, 0.4);
-            letter-spacing: 1px;
-        }
-
-        .btn-main {
-            width: 220px;
-            padding: 15px;
-            margin: 10px 0;
+        #game-over h1 { font-size: 36px; color: #e74c3c; margin-bottom: 10px; }
+        #game-over button {
+            padding: 12px 25px;
             font-size: 18px;
-            font-weight: bold;
-            color: white;
             background: #2ecc71;
             border: none;
-            border-radius: 30px;
-            cursor: pointer;
-            box-shadow: 0 5px 15px rgba(46, 204, 113, 0.4);
-            transition: all 0.2s;
-        }
-        .btn-main:active {
-            transform: scale(0.96);
-        }
-        .btn-disabled {
-            background: #475569 !important;
-            color: #94a3b8 !important;
-            box-shadow: none !important;
-            cursor: not-allowed;
-            opacity: 0.7;
-        }
-
-        /* BÖLÜM SEÇME GRID */
-        .level-grid {
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 12px;
-            width: 100%;
-            max-width: 320px;
-            margin-bottom: 25px;
-        }
-        .level-btn {
-            aspect-ratio: 1;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            font-size: 18px;
-            font-weight: bold;
-            border-radius: 12px;
-            border: 2px solid transparent;
-            cursor: pointer;
-        }
-        .level-active {
-            background: #e67e22;
             color: white;
-            border-color: #f39c12;
-            box-shadow: 0 0 15px rgba(230, 126, 34, 0.6);
-        }
-        .level-locked {
-            background: #1e293b;
-            color: #475569;
-            border-color: #334155;
-            cursor: not-allowed;
-        }
-
-        /* UYARI BİLDİRİMİ (TOAST) */
-        #toast {
-            position: absolute;
-            bottom: 30px;
-            background: #e74c3c;
-            color: white;
-            padding: 12px 20px;
-            border-radius: 20px;
-            font-size: 14px;
+            border-radius: 25px;
             font-weight: bold;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.5);
-            display: none;
-            z-index: 50;
-            animation: fadeIn 0.3s ease;
+            cursor: pointer;
+            margin-top: 15px;
         }
-
-        .stars { font-size: 38px; margin: 10px 0; color: #f1c40f; }
     </style>
 </head>
 <body>
 
 <div id="game-container">
-    <div class="hud" id="hud">Altın: <span id="coin-count">0</span> / <span id="max-coins">0</span></div>
+    <div class="hud">Altın: <span id="coin-count">0</span></div>
     <canvas id="canvas"></canvas>
     
     <!-- Ekran Üstü Kontroller -->
-    <div class="controls" id="controls">
+    <div class="controls">
         <div class="d-pad">
             <div class="btn" id="btn-left">◄</div>
             <div class="btn" id="btn-right">►</div>
@@ -204,177 +129,91 @@
         <div class="btn btn-jump" id="btn-jump">▲</div>
     </div>
 
-    <!-- 1. ANA MENÜ -->
-    <div id="main-menu" class="screen">
-        <h1>SÜPER MACERA</h1>
-        <button class="btn-main" onclick="openLevelSelect()">BAŞLA</button>
-        <button class="btn-main btn-disabled" onclick="showToast('Ayarlar gelecek güncellemede eklenecektir!')">AYARLAR</button>
+    <!-- Game Over Ekranı -->
+    <div id="game-over">
+        <h1>ÖLDÜN!</h1>
+        <p>Yaratığa değdin ve elendin.</p>
+        <button onclick="restartGame()">Tekrar Dene</button>
     </div>
-
-    <!-- 2. BÖLÜM SEÇME MENÜSÜ -->
-    <div id="level-menu" class="screen" style="display: none;">
-        <h2 style="margin-bottom: 20px; color: #38bdf8;">Bölüm Seç</h2>
-        <div class="level-grid" id="level-grid"></div>
-        <button class="btn-main" style="width: 150px; background: #64748b;" onclick="openMainMenu()">Geri</button>
-    </div>
-
-    <!-- 3. GAME OVER EKRANI -->
-    <div id="game-over" class="screen" style="display: none;">
-        <h1 style="color: #e74c3c;">ÖLDÜN!</h1>
-        <p style="margin-bottom: 20px; color: #cbd5e1;">Düştün veya Yaratığa Çarptın!</p>
-        <button class="btn-main" onclick="restartGame()">Tekrar Oyna</button>
-        <button class="btn-main" style="background: #64748b;" onclick="openMainMenu()">Ana Menü</button>
-    </div>
-
-    <!-- 4. KAZANMA EKRANI -->
-    <div id="win-screen" class="screen" style="display: none;">
-        <h1 style="color: #2ecc71;">TEBRİKLER!</h1>
-        <p>Bölüm 1 Tamamlandı!</p>
-        <div class="stars" id="star-rating">☆☆☆</div>
-        <p id="coin-result-text" style="font-size: 14px; color: #cbd5e1; margin-bottom: 20px;"></p>
-        
-        <button class="btn-main" onclick="restartGame()">Tekrar Oyna</button>
-        <button class="btn-main btn-disabled" onclick="showToast('Sıradaki bölüm gelecek güncellemede gelecek!')">Sıradaki Bölüm</button>
-        <button class="btn-main" style="background: #64748b;" onclick="openMainMenu()">Ana Menü</button>
-    </div>
-
-    <!-- Bildirim Balonu -->
-    <div id="toast"></div>
 </div>
 
 <script>
 const canvas = document.getElementById('canvas');
 const ctx = canvas.getContext('2d');
-
-// UI Elemanları
-const hud = document.getElementById('hud');
-const controls = document.getElementById('controls');
-const mainMenu = document.getElementById('main-menu');
-const levelMenu = document.getElementById('level-menu');
-const gameOverScreen = document.getElementById('game-over');
-const winScreen = document.getElementById('win-screen');
-const levelGrid = document.getElementById('level-grid');
 const coinDisplay = document.getElementById('coin-count');
-const maxCoinsDisplay = document.getElementById('max-coins');
-const starRating = document.getElementById('star-rating');
-const coinResultText = document.getElementById('coin-result-text');
-const toast = document.getElementById('toast');
+const gameOverScreen = document.getElementById('game-over');
 
+// Ekran Boyutlandırma
 canvas.width = 420;
 canvas.height = 750;
 
+// Oyun Durum Değişkenleri
 let coins = 0;
 let isGameOver = false;
-let isGameWon = false;
-let isPlaying = false;
 let gameTime = 0;
-let cameraX = 0;
 
+// Girdi Yönetimi
 const keys = { left: false, right: false, jump: false };
+
+// --- Fiziksel Nesneler ---
 const gravity = 0.55;
 
-// Karakter Fizikleri
+// Karakter (Yeşil-Mavi Renk Temalı, Hacimli ve Gölgeli)
 const player = {
-    x: 50, y: 500,
-    width: 30, height: 46,
-    vx: 0, vy: 0,
-    speed: 2.8, jumpPower: -11.8,
+    x: 50,
+    y: 500,
+    width: 32,
+    height: 48,
+    vx: 0,
+    vy: 0,
+    speed: 4.5,
+    jumpPower: -12.5,
     grounded: false
 };
 
-// --- HARİTA TASARIMI (Bölüm 1) ---
-const platforms = [
-    { x: 0, y: 640, width: 800, height: 110 },
-    { x: 880, y: 640, width: 700, height: 110 },
-    { x: 1640, y: 640, width: 600, height: 110 }
+// Zemin
+const groundY = 620;
+
+// Bulutlar (Derinlik Efektli)
+const clouds = [
+    { x: 50, y: 80, scale: 0.8, speed: 0.2 },
+    { x: 250, y: 150, scale: 1.2, speed: 0.4 },
+    { x: 120, y: 280, scale: 0.6, speed: 0.15 }
 ];
 
-const movingPlatforms = [
-    { x: 810, y: 550, width: 120, height: 20, startX: 810, endX: 860, vx: 0.6 }
-];
-
-const blocks = [
-    { x: 300, y: 500, width: 40, height: 40, hit: false, bounce: 0 },
-    { x: 500, y: 500, width: 40, height: 40, hit: false, bounce: 0 },
-    { x: 1100, y: 500, width: 40, height: 40, hit: false, bounce: 0 }
-];
-
-let enemies = [
-    { x: 1150, y: 605, width: 35, height: 35, vx: -0.8, minX: 950, maxX: 1350, alive: true }
-];
-
-const elevator = {
-    x: 1950, y: 500, width: 70, height: 140,
-    doorProgress: 0, isTriggered: false, timer: 0
-};
-
-let particles = [];
-let grassBlades = [];
-
-for (let i = 0; i < 2300; i += 4) {
+// Gerçekçi Çimen Yaprakları Detayı
+const grassBlades = [];
+for (let i = 0; i < canvas.width; i += 3) {
     grassBlades.push({
         x: i,
         height: 12 + Math.random() * 10,
+        angle: Math.random() * 0.2 - 0.1,
         speed: 0.05 + Math.random() * 0.05
     });
 }
 
-maxCoinsDisplay.innerText = blocks.length;
+// Şans Blokları
+const blocks = [
+    { x: 80, y: 450, width: 40, height: 40, hit: false, bounce: 0 },
+    { x: 180, y: 380, width: 40, height: 40, hit: false, bounce: 0 },
+    { x: 280, y: 450, width: 40, height: 40, hit: false, bounce: 0 }
+];
 
-// --- MENÜ VE NAVİGASYON FONKSİYONLARI ---
+// Yaratık (Devriye Gezen Düşman)
+const enemy = {
+    x: 320,
+    y: groundY - 35,
+    width: 35,
+    height: 35,
+    vx: -1.5
+};
 
-function openMainMenu() {
-    isPlaying = false;
-    mainMenu.style.display = 'flex';
-    levelMenu.style.display = 'none';
-    gameOverScreen.style.display = 'none';
-    winScreen.style.display = 'none';
-    hud.style.display = 'none';
-    controls.style.display = 'none';
-}
+// Efekt Parlamaları (Altın Çıkınca)
+let particles = [];
 
-function openLevelSelect() {
-    mainMenu.style.display = 'none';
-    levelMenu.style.display = 'flex';
-    renderLevelGrid();
-}
+// --- ÇİZİM FONKSİYONLARI ---
 
-function renderLevelGrid() {
-    levelGrid.innerHTML = '';
-    for (let i = 1; i <= 15; i++) {
-        const btn = document.createElement('div');
-        btn.classList.add('level-btn');
-        btn.innerText = i;
-        
-        if (i === 1) {
-            btn.classList.add('level-active');
-            btn.onclick = () => startLevel(1);
-        } else {
-            btn.classList.add('level-locked');
-            btn.onclick = () => showToast('Bu bölüm gelecek güncellemede açılacaktır!');
-        }
-        levelGrid.appendChild(btn);
-    }
-}
-
-function startLevel(levelNum) {
-    levelMenu.style.display = 'none';
-    hud.style.display = 'block';
-    controls.style.display = 'flex';
-    restartGame();
-    isPlaying = true;
-}
-
-function showToast(msg) {
-    toast.innerText = msg;
-    toast.style.display = 'block';
-    setTimeout(() => {
-        toast.style.display = 'none';
-    }, 2500);
-}
-
-// --- ÇİZİM VE OYUN MANTIĞI ---
-
+// Gerçekçi Güneş Çizimi
 function drawSun() {
     ctx.save();
     let gradient = ctx.createRadialGradient(340, 70, 10, 340, 70, 80);
@@ -388,249 +227,201 @@ function drawSun() {
     ctx.restore();
 }
 
+// Animasyonlu Gerçekçi Bulutlar
 function drawClouds() {
     ctx.fillStyle = 'rgba(255, 255, 255, 0.85)';
-    [
-        { x: 100, y: 80, scale: 0.9 },
-        { x: 600, y: 120, scale: 1.1 },
-        { x: 1200, y: 70, scale: 0.8 },
-        { x: 1700, y: 110, scale: 1.0 }
-    ].forEach(c => {
-        let drawX = c.x - cameraX * 0.2;
+    clouds.forEach(c => {
+        c.x += c.speed;
+        if (c.x - 100 > canvas.width) c.x = -100;
+
         ctx.save();
         ctx.beginPath();
-        ctx.arc(drawX, c.y, 20 * c.scale, 0, Math.PI * 2);
-        ctx.arc(drawX + 25 * c.scale, c.y - 10 * c.scale, 25 * c.scale, 0, Math.PI * 2);
-        ctx.arc(drawX + 50 * c.scale, c.y, 20 * c.scale, 0, Math.PI * 2);
+        ctx.arc(c.x, c.y, 20 * c.scale, 0, Math.PI * 2);
+        ctx.arc(c.x + 25 * c.scale, c.y - 10 * c.scale, 25 * c.scale, 0, Math.PI * 2);
+        ctx.arc(c.x + 50 * c.scale, c.y, 20 * c.scale, 0, Math.PI * 2);
         ctx.fill();
         ctx.restore();
     });
 }
 
-function drawPlatforms() {
-    platforms.forEach(p => {
-        let drawX = p.x - cameraX;
-        let earthGrad = ctx.createLinearGradient(0, p.y, 0, p.y + p.height);
-        earthGrad.addColorStop(0, '#5d4037');
-        earthGrad.addColorStop(1, '#2d1b14');
-        ctx.fillStyle = earthGrad;
-        ctx.fillRect(drawX, p.y, p.width, p.height);
+// Animasyonlu, Rüzgarda Sallanan Gerçekçi Çimenler
+function drawGrass() {
+    // Toprak Katmanı
+    let earthGrad = ctx.createLinearGradient(0, groundY, 0, canvas.height);
+    earthGrad.addColorStop(0, '#5d4037');
+    earthGrad.addColorStop(1, '#2d1b14');
+    ctx.fillStyle = earthGrad;
+    ctx.fillRect(0, groundY, canvas.width, canvas.height - groundY);
 
-        ctx.fillStyle = '#2e7d32';
-        ctx.fillRect(drawX, p.y - 4, p.width, 6);
+    // Çim Tabanı
+    ctx.fillStyle = '#2e7d32';
+    ctx.fillRect(0, groundY - 4, canvas.width, 6);
 
-        ctx.lineWidth = 2;
-        grassBlades.forEach(blade => {
-            if (blade.x >= p.x && blade.x <= p.x + p.width) {
-                let bladeDrawX = blade.x - cameraX;
-                let wind = Math.sin(gameTime * blade.speed + blade.x) * 4;
-                let tipX = bladeDrawX + wind;
-                let tipY = p.y - blade.height;
+    // Bireysel Çimen Yaprakları
+    ctx.lineWidth = 2;
+    grassBlades.forEach((blade) => {
+        let wind = Math.sin(gameTime * blade.speed + blade.x) * 4;
+        let tipX = blade.x + wind;
+        let tipY = groundY - blade.height;
 
-                let grad = ctx.createLinearGradient(bladeDrawX, p.y, tipX, tipY);
-                grad.addColorStop(0, '#1b5e20');
-                grad.addColorStop(1, '#76ff03');
+        let grad = ctx.createLinearGradient(blade.x, groundY, tipX, tipY);
+        grad.addColorStop(0, '#1b5e20');
+        grad.addColorStop(1, '#76ff03');
 
-                ctx.strokeStyle = grad;
-                ctx.beginPath();
-                ctx.moveTo(bladeDrawX, p.y);
-                ctx.quadraticCurveTo(bladeDrawX, p.y - blade.height / 2, tipX, tipY);
-                ctx.stroke();
-            }
-        });
-    });
-
-    movingPlatforms.forEach(mp => {
-        let drawX = mp.x - cameraX;
-        ctx.fillStyle = '#8e44ad';
-        ctx.fillRect(drawX, mp.y, mp.width, mp.height);
-        ctx.strokeStyle = '#9b59b6';
-        ctx.lineWidth = 3;
-        ctx.strokeRect(drawX, mp.y, mp.width, mp.height);
+        ctx.strokeStyle = grad;
+        ctx.beginPath();
+        ctx.moveTo(blade.x, groundY);
+        ctx.quadraticCurveTo(blade.x, groundY - blade.height / 2, tipX, tipY);
+        ctx.stroke();
     });
 }
 
+// Yeşil-Mavi Gerçekçi Karakter
 function drawPlayer() {
-    let drawX = player.x - cameraX;
     ctx.save();
     
-    if (player.grounded) {
-        ctx.fillStyle = 'rgba(0,0,0,0.3)';
-        ctx.beginPath();
-        ctx.ellipse(drawX + player.width/2, player.y + player.height, player.width/2, 4, 0, 0, Math.PI * 2);
-        ctx.fill();
-    }
-
-    let bodyGrad = ctx.createLinearGradient(drawX, player.y, drawX + player.width, player.y + player.height);
-    bodyGrad.addColorStop(0, '#00c6ff');
-    bodyGrad.addColorStop(1, '#0072ff');
-    ctx.fillStyle = bodyGrad;
-    ctx.fillRect(drawX + 4, player.y + 16, player.width - 8, player.height - 16);
-
-    let headGrad = ctx.createLinearGradient(drawX, player.y, drawX, player.y + 16);
-    headGrad.addColorStop(0, '#11998e');
-    headGrad.addColorStop(1, '#38ef7d');
-    ctx.fillStyle = headGrad;
+    // Gölge
+    ctx.fillStyle = 'rgba(0,0,0,0.3)';
     ctx.beginPath();
-    ctx.arc(drawX + player.width/2, player.y + 12, 12, 0, Math.PI * 2);
+    ctx.ellipse(player.x + player.width/2, groundY, player.width/2, 4, 0, 0, Math.PI * 2);
     ctx.fill();
 
+    // Gövde (Mavi Kıyafet / Yeşil Detay)
+    let bodyGrad = ctx.createLinearGradient(player.x, player.y, player.x + player.width, player.y + player.height);
+    bodyGrad.addColorStop(0, '#00c6ff'); // Mavi
+    bodyGrad.addColorStop(1, '#0072ff');
+    ctx.fillStyle = bodyGrad;
+    ctx.fillRect(player.x + 4, player.y + 16, player.width - 8, player.height - 16);
+
+    // Şapka/Kafa (Yeşil)
+    let headGrad = ctx.createLinearGradient(player.x, player.y, player.x, player.y + 16);
+    headGrad.addColorStop(0, '#11998e');
+    headGrad.addColorStop(1, '#38ef7d'); // Canlı Yeşil
+    ctx.fillStyle = headGrad;
+    ctx.beginPath();
+    ctx.arc(player.x + player.width/2, player.y + 12, 12, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Gözler
     ctx.fillStyle = '#fff';
-    ctx.fillRect(drawX + 18, player.y + 8, 4, 4);
+    ctx.fillRect(player.x + 18, player.y + 8, 4, 4);
+
     ctx.restore();
 }
 
+// Şans Blokları
 function drawBlocks() {
     blocks.forEach(b => {
-        let drawX = b.x - cameraX;
+        ctx.save();
         let drawY = b.y + b.bounce;
 
-        ctx.save();
         if (b.hit) {
             ctx.fillStyle = '#7f8c8d';
-            ctx.fillRect(drawX, drawY, b.width, b.height);
+            ctx.fillRect(b.x, drawY, b.width, b.height);
         } else {
-            let grad = ctx.createLinearGradient(drawX, drawY, drawX + b.width, drawY + b.height);
+            // Parlayan Şans Bloğu
+            let grad = ctx.createLinearGradient(b.x, drawY, b.x + b.width, drawY + b.height);
             grad.addColorStop(0, '#f1c40f');
             grad.addColorStop(1, '#f39c12');
             ctx.fillStyle = grad;
-            ctx.fillRect(drawX, drawY, b.width, b.height);
+            ctx.fillRect(b.x, drawY, b.width, b.height);
 
+            // Soru İşareti
             ctx.fillStyle = '#fff';
             ctx.font = 'bold 22px Arial';
-            ctx.fillText('?', drawX + 14, drawY + 28);
+            ctx.fillText('?', b.x + 14, drawY + 28);
         }
 
+        // Derinlik/Çerçeve
         ctx.strokeStyle = 'rgba(0,0,0,0.3)';
         ctx.lineWidth = 3;
-        ctx.strokeRect(drawX, drawY, b.width, b.height);
+        ctx.strokeRect(b.x, drawY, b.width, b.height);
+
         ctx.restore();
 
+        // Blok Zıplama Animasyonu
         if (b.bounce < 0) b.bounce += 1;
     });
 }
 
-function drawEnemies() {
-    enemies.forEach(e => {
-        if (!e.alive) return;
-        let drawX = e.x - cameraX;
-
-        ctx.save();
-        let grad = ctx.createRadialGradient(
-            drawX + 15, e.y + 15, 5,
-            drawX + 15, e.y + 15, 20
-        );
-        grad.addColorStop(0, '#ff4e50');
-        grad.addColorStop(1, '#f9d423');
-
-        ctx.fillStyle = grad;
-        ctx.beginPath();
-        ctx.arc(drawX + e.width/2, e.y + e.height/2, e.width/2, 0, Math.PI * 2);
-        ctx.fill();
-
-        ctx.fillStyle = '#000';
-        ctx.fillRect(drawX + 8, e.y + 10, 5, 5);
-        ctx.fillRect(drawX + 20, e.y + 10, 5, 5);
-        ctx.restore();
-    });
-}
-
-function drawElevator() {
-    let drawX = elevator.x - cameraX;
+// Yaratık
+function drawEnemy() {
     ctx.save();
-    ctx.fillStyle = '#34495e';
-    ctx.fillRect(drawX, elevator.y, elevator.width, elevator.height);
-    
-    ctx.fillStyle = '#111';
-    ctx.fillRect(drawX + 5, elevator.y + 10, elevator.width - 10, elevator.height - 10);
+    // Kırmızı-Tehlikeli Dokulu Yaratık
+    let grad = ctx.createRadialGradient(
+        enemy.x + 15, enemy.y + 15, 5,
+        enemy.x + 15, enemy.y + 15, 20
+    );
+    grad.addColorStop(0, '#ff4e50');
+    grad.addColorStop(1, '#f9d423');
 
-    let doorWidth = (elevator.width - 10) / 2 * elevator.doorProgress;
-    ctx.fillStyle = '#7f8c8d';
-    ctx.fillRect(drawX + 5, elevator.y + 10, doorWidth, elevator.height - 10);
-    ctx.fillRect(drawX + elevator.width - 5 - doorWidth, elevator.y + 10, doorWidth, elevator.height - 10);
+    ctx.fillStyle = grad;
+    ctx.beginPath();
+    ctx.arc(enemy.x + enemy.width/2, enemy.y + enemy.height/2, enemy.width/2, 0, Math.PI * 2);
+    ctx.fill();
 
-    ctx.strokeStyle = '#ecf0f1';
-    ctx.lineWidth = 4;
-    ctx.strokeRect(drawX, elevator.y, elevator.width, elevator.height);
+    // Kızgın Gözler
+    ctx.fillStyle = '#000';
+    ctx.fillRect(enemy.x + 8, enemy.y + 10, 5, 5);
+    ctx.fillRect(enemy.x + 20, enemy.y + 10, 5, 5);
+
     ctx.restore();
 }
 
+// Altın Efekt Partikülleri
 function drawParticles() {
     particles.forEach((p, index) => {
         p.x += p.vx;
         p.y += p.vy;
         p.alpha -= 0.02;
 
-        ctx.fillStyle = `rgba(${p.color || '241, 196, 15'}, ${p.alpha})`;
+        ctx.fillStyle = `rgba(241, 196, 15, ${p.alpha})`;
         ctx.beginPath();
-        ctx.arc(p.x - cameraX, p.y, p.size, 0, Math.PI * 2);
+        ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
         ctx.fill();
 
         if (p.alpha <= 0) particles.splice(index, 1);
     });
 }
 
+// --- FİZİK VE GÜNCELLEME ---
+
 function update() {
-    if (!isPlaying || isGameOver || isGameWon) return;
+    if (isGameOver) return;
 
     gameTime += 0.05;
 
+    // Yatay Hareket
     if (keys.left) player.vx = -player.speed;
     else if (keys.right) player.vx = player.speed;
-    else player.vx *= 0.65;
+    else player.vx *= 0.8; // Sürtünme
 
+    // Dikey Hareket / Yerçekimi
     player.vy += gravity;
+
     player.x += player.vx;
     player.y += player.vy;
 
-    if (player.x - cameraX > 200) {
-        cameraX = player.x - 200;
-    } else if (player.x - cameraX < 80 && cameraX > 0) {
-        cameraX = player.x - 80;
+    // Ekran Sınırları
+    if (player.x < 0) player.x = 0;
+    if (player.x + player.width > canvas.width) player.x = canvas.width - player.width;
+
+    // Zemin Etkileşimi
+    if (player.y + player.height >= groundY) {
+        player.y = groundY - player.height;
+        player.vy = 0;
+        player.grounded = true;
+    } else {
+        player.grounded = false;
     }
 
-    if (player.y > canvas.height + 100) {
-        triggerGameOver();
-    }
-
-    movingPlatforms.forEach(mp => {
-        mp.x += mp.vx;
-        if (mp.x <= mp.startX || mp.x >= mp.endX) mp.vx *= -1;
-
-        if (
-            player.x + player.width > mp.x &&
-            player.x < mp.x + mp.width &&
-            player.y + player.height >= mp.y &&
-            player.y + player.height <= mp.y + 10 &&
-            player.vy >= 0
-        ) {
-            player.y = mp.y - player.height;
-            player.vy = 0;
-            player.grounded = true;
-            player.x += mp.vx;
-        }
-    });
-
-    player.grounded = false;
-    platforms.forEach(p => {
-        if (
-            player.x + player.width > p.x &&
-            player.x < p.x + p.width &&
-            player.y + player.height >= p.y &&
-            player.y + player.height <= p.y + 15 &&
-            player.vy >= 0
-        ) {
-            player.y = p.y - player.height;
-            player.vy = 0;
-            player.grounded = true;
-        }
-    });
-
+    // Zıplama
     if (keys.jump && player.grounded) {
         player.vy = player.jumpPower;
         player.grounded = false;
     }
 
+    // Blok Etkileşimleri (Aşağıdan Kafayla Vurma)
     blocks.forEach(b => {
         if (
             player.x < b.x + b.width &&
@@ -638,15 +429,118 @@ function update() {
             player.y < b.y + b.height &&
             player.y + player.height > b.y
         ) {
+            // Aşağıdan kafa atma kontrolü
             if (player.vy < 0 && player.y > b.y + b.height - 12) {
-                player.vy = 2;
+                player.vy = 2; // Kafayı çarpınca aşağı sekme
                 if (!b.hit) {
                     b.hit = true;
                     b.bounce = -8;
                     coins++;
                     coinDisplay.innerText = coins;
-                    spawnParticles(b.x + b.width/2, b.y, '241, 196, 15');
+                    spawnParticles(b.x + b.width/2, b.y);
                 }
             } else if (player.vy > 0 && player.y + player.height - player.vy <= b.y) {
+                // Bloğun üstüne basma
                 player.y = b.y - player.height;
-                player.v
+                player.vy = 0;
+                player.grounded = true;
+            }
+        }
+    });
+
+    // Yaratık Hareketi
+    enemy.x += enemy.vx;
+    if (enemy.x <= 10 || enemy.x + enemy.width >= canvas.width - 10) {
+        enemy.vx *= -1; // Duvardan dön
+    }
+
+    // Yaratık ile Temas Kontrolü (Üstüne de basılsa, yanına da değilse ÖLÜM)
+    if (
+        player.x < enemy.x + enemy.width &&
+        player.x + player.width > enemy.x &&
+        player.y < enemy.y + enemy.height &&
+        player.y + player.height > enemy.y
+    ) {
+        triggerGameOver();
+    }
+}
+
+function spawnParticles(x, y) {
+    for (let i = 0; i < 12; i++) {
+        particles.push({
+            x: x,
+            y: y,
+            vx: (Math.random() - 0.5) * 6,
+            vy: (Math.random() - 0.5) * 6 - 2,
+            size: 3 + Math.random() * 4,
+            alpha: 1
+        });
+    }
+}
+
+function triggerGameOver() {
+    isGameOver = true;
+    gameOverScreen.style.display = 'flex';
+}
+
+function restartGame() {
+    player.x = 50;
+    player.y = 500;
+    player.vx = 0;
+    player.vy = 0;
+    coins = 0;
+    coinDisplay.innerText = coins;
+    blocks.forEach(b => b.hit = false);
+    isGameOver = false;
+    gameOverScreen.style.display = 'none';
+}
+
+// Main Render Döngüsü
+function loop() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    drawSun();
+    drawClouds();
+    drawGrass();
+    drawBlocks();
+    drawEnemy();
+    drawPlayer();
+    drawParticles();
+
+    update();
+
+    requestAnimationFrame(loop);
+}
+
+// --- DOKUNMATİK VE KLAVYE KONTROLLERİ ---
+
+function bindTouch(elementId, keyName) {
+    const btn = document.getElementById(elementId);
+    btn.addEventListener('touchstart', (e) => { e.preventDefault(); keys[keyName] = true; });
+    btn.addEventListener('touchend', (e) => { e.preventDefault(); keys[keyName] = false; });
+    btn.addEventListener('mousedown', () => { keys[keyName] = true; });
+    btn.addEventListener('mouseup', () => { keys[keyName] = false; });
+}
+
+bindTouch('btn-left', 'left');
+bindTouch('btn-right', 'right');
+bindTouch('btn-jump', 'jump');
+
+// PC Klavye Desteği (Yön Tuşları + Boşluk)
+window.addEventListener('keydown', (e) => {
+    if (e.key === 'ArrowLeft' || e.key === 'a') keys.left = true;
+    if (e.key === 'ArrowRight' || e.key === 'd') keys.right = true;
+    if (e.key === 'ArrowUp' || e.key === ' ' || e.key === 'w') keys.jump = true;
+});
+
+window.addEventListener('keyup', (e) => {
+    if (e.key === 'ArrowLeft' || e.key === 'a') keys.left = false;
+    if (e.key === 'ArrowRight' || e.key === 'd') keys.right = false;
+    if (e.key === 'ArrowUp' || e.key === ' ' || e.key === 'w') keys.jump = false;
+});
+
+// Oyunu Başlat
+loop();
+</script>
+</body>
+</html>
