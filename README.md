@@ -100,7 +100,7 @@
             justify-content: center;
             align-items: center;
             color: white;
-            z-index: 999;
+            z-index: 30;
             text-align: center;
             padding: 20px;
         }
@@ -125,8 +125,6 @@
             cursor: pointer;
             box-shadow: 0 5px 15px rgba(46, 204, 113, 0.4);
             transition: all 0.2s;
-            z-index: 1000;
-            pointer-events: auto;
         }
         .btn-main:active {
             transform: scale(0.96);
@@ -147,7 +145,6 @@
             width: 100%;
             max-width: 320px;
             margin-bottom: 25px;
-            z-index: 1000;
         }
         .level-btn {
             aspect-ratio: 1;
@@ -185,7 +182,8 @@
             font-weight: bold;
             box-shadow: 0 5px 15px rgba(0,0,0,0.5);
             display: none;
-            z-index: 2000;
+            z-index: 50;
+            animation: fadeIn 0.3s ease;
         }
 
         .stars { font-size: 38px; margin: 10px 0; color: #f1c40f; }
@@ -236,6 +234,7 @@
         <p id="coin-result-text" style="font-size: 14px; color: #cbd5e1; margin-bottom: 20px;"></p>
         
         <button class="btn-main" onclick="restartGame()">Tekrar Oyna</button>
+        <button class="btn-main btn-disabled" onclick="showToast('Sıradaki bölüm gelecek güncellemede gelecek!')">Sıradaki Bölüm</button>
         <button class="btn-main" style="background: #64748b;" onclick="openMainMenu()">Ana Menü</button>
     </div>
 
@@ -247,6 +246,7 @@
 const canvas = document.getElementById('canvas');
 const ctx = canvas.getContext('2d');
 
+// UI Elemanları
 const hud = document.getElementById('hud');
 const controls = document.getElementById('controls');
 const mainMenu = document.getElementById('main-menu');
@@ -273,6 +273,7 @@ let cameraX = 0;
 const keys = { left: false, right: false, jump: false };
 const gravity = 0.55;
 
+// Karakter Fizikleri
 const player = {
     x: 50, y: 500,
     width: 30, height: 46,
@@ -281,6 +282,7 @@ const player = {
     grounded: false
 };
 
+// --- HARİTA TASARIMI (Bölüm 1) ---
 const platforms = [
     { x: 0, y: 640, width: 800, height: 110 },
     { x: 880, y: 640, width: 700, height: 110 },
@@ -319,33 +321,7 @@ for (let i = 0; i < 2300; i += 4) {
 
 maxCoinsDisplay.innerText = blocks.length;
 
-// --- DOKUNMATİK VE KLAVYE KONTROLLERİ ---
-function bindTouchButton(id, keyName) {
-    const btn = document.getElementById(id);
-    if (!btn) return;
-    btn.addEventListener('touchstart', (e) => { e.preventDefault(); keys[keyName] = true; }, {passive: false});
-    btn.addEventListener('touchend', (e) => { e.preventDefault(); keys[keyName] = false; }, {passive: false});
-    btn.addEventListener('mousedown', () => { keys[keyName] = true; });
-    btn.addEventListener('mouseup', () => { keys[keyName] = false; });
-}
-
-bindTouchButton('btn-left', 'left');
-bindTouchButton('btn-right', 'right');
-bindTouchButton('btn-jump', 'jump');
-
-window.addEventListener('keydown', (e) => {
-    if (e.code === 'ArrowLeft' || e.code === 'KeyA') keys.left = true;
-    if (e.code === 'ArrowRight' || e.code === 'KeyD') keys.right = true;
-    if (e.code === 'ArrowUp' || e.code === 'Space' || e.code === 'KeyW') keys.jump = true;
-});
-
-window.addEventListener('keyup', (e) => {
-    if (e.code === 'ArrowLeft' || e.code === 'KeyA') keys.left = false;
-    if (e.code === 'ArrowRight' || e.code === 'KeyD') keys.right = false;
-    if (e.code === 'ArrowUp' || e.code === 'Space' || e.code === 'KeyW') keys.jump = false;
-});
-
-// --- MENÜ FONKSİYONLARI ---
+// --- MENÜ VE NAVİGASYON FONKSİYONLARI ---
 
 function openMainMenu() {
     isPlaying = false;
@@ -389,42 +365,6 @@ function startLevel(levelNum) {
     isPlaying = true;
 }
 
-function restartGame() {
-    isGameOver = false;
-    isGameWon = false;
-    coins = 0;
-    coinDisplay.innerText = coins;
-    player.x = 50;
-    player.y = 500;
-    player.vx = 0;
-    player.vy = 0;
-    cameraX = 0;
-    
-    blocks.forEach(b => { b.hit = false; b.bounce = 0; });
-    enemies.forEach(e => { e.alive = true; e.x = 1150; });
-    elevator.isTriggered = false;
-    elevator.doorProgress = 0;
-    elevator.timer = 0;
-
-    gameOverScreen.style.display = 'none';
-    winScreen.style.display = 'none';
-    isPlaying = true;
-}
-
-function triggerGameOver() {
-    isGameOver = true;
-    isPlaying = false;
-    gameOverScreen.style.display = 'flex';
-}
-
-function triggerWin() {
-    isGameWon = true;
-    isPlaying = false;
-    winScreen.style.display = 'flex';
-    coinResultText.innerText = `Toplanan Altın: ${coins} / ${blocks.length}`;
-    starRating.innerText = coins === blocks.length ? '⭐⭐⭐' : (coins > 0 ? '⭐⭐☆' : '⭐☆☆');
-}
-
 function showToast(msg) {
     toast.innerText = msg;
     toast.style.display = 'block';
@@ -433,20 +373,20 @@ function showToast(msg) {
     }, 2500);
 }
 
-function spawnParticles(x, y, color) {
-    for (let i = 0; i < 6; i++) {
-        particles.push({
-            x: x, y: y,
-            vx: (Math.random() - 0.5) * 4,
-            vy: (Math.random() - 0.5) * 4 - 2,
-            alpha: 1,
-            size: 3 + Math.random() * 3,
-            color: color
-        });
-    }
-}
+// --- ÇİZİM VE OYUN MANTIĞI ---
 
-// --- OYUN ÇİZİM MANTIĞI ---
+function drawSun() {
+    ctx.save();
+    let gradient = ctx.createRadialGradient(340, 70, 10, 340, 70, 80);
+    gradient.addColorStop(0, 'rgba(255, 255, 220, 1)');
+    gradient.addColorStop(0.2, 'rgba(255, 220, 100, 0.8)');
+    gradient.addColorStop(1, 'rgba(255, 200, 50, 0)');
+    ctx.fillStyle = gradient;
+    ctx.beginPath();
+    ctx.arc(340, 70, 80, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+}
 
 function drawClouds() {
     ctx.fillStyle = 'rgba(255, 255, 255, 0.85)';
@@ -630,8 +570,6 @@ function drawParticles() {
     });
 }
 
-// --- OYUN GÜNCELLEME DÖNGÜSÜ ---
-
 function update() {
     if (!isPlaying || isGameOver || isGameWon) return;
 
@@ -648,4 +586,67 @@ function update() {
     if (player.x - cameraX > 200) {
         cameraX = player.x - 200;
     } else if (player.x - cameraX < 80 && cameraX > 0) {
-        cameraX = pla
+        cameraX = player.x - 80;
+    }
+
+    if (player.y > canvas.height + 100) {
+        triggerGameOver();
+    }
+
+    movingPlatforms.forEach(mp => {
+        mp.x += mp.vx;
+        if (mp.x <= mp.startX || mp.x >= mp.endX) mp.vx *= -1;
+
+        if (
+            player.x + player.width > mp.x &&
+            player.x < mp.x + mp.width &&
+            player.y + player.height >= mp.y &&
+            player.y + player.height <= mp.y + 10 &&
+            player.vy >= 0
+        ) {
+            player.y = mp.y - player.height;
+            player.vy = 0;
+            player.grounded = true;
+            player.x += mp.vx;
+        }
+    });
+
+    player.grounded = false;
+    platforms.forEach(p => {
+        if (
+            player.x + player.width > p.x &&
+            player.x < p.x + p.width &&
+            player.y + player.height >= p.y &&
+            player.y + player.height <= p.y + 15 &&
+            player.vy >= 0
+        ) {
+            player.y = p.y - player.height;
+            player.vy = 0;
+            player.grounded = true;
+        }
+    });
+
+    if (keys.jump && player.grounded) {
+        player.vy = player.jumpPower;
+        player.grounded = false;
+    }
+
+    blocks.forEach(b => {
+        if (
+            player.x < b.x + b.width &&
+            player.x + player.width > b.x &&
+            player.y < b.y + b.height &&
+            player.y + player.height > b.y
+        ) {
+            if (player.vy < 0 && player.y > b.y + b.height - 12) {
+                player.vy = 2;
+                if (!b.hit) {
+                    b.hit = true;
+                    b.bounce = -8;
+                    coins++;
+                    coinDisplay.innerText = coins;
+                    spawnParticles(b.x + b.width/2, b.y, '241, 196, 15');
+                }
+            } else if (player.vy > 0 && player.y + player.height - player.vy <= b.y) {
+                player.y = b.y - player.height;
+                player.v
