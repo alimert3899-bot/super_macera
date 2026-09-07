@@ -2,503 +2,303 @@
 <html lang="tr">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Süper Macera</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Süper Macera - Bölüm 1 & Bölüm 2</title>
     <style>
-        * {
-            box-sizing: border-box;
-            user-select: none;
-            -webkit-user-select: none;
-        }
-        body, html {
+        body {
             margin: 0;
-            padding: 0;
-            width: 100%;
-            height: 100%;
-            overflow: hidden;
-            background-color: #3585c7;
-            font-family: Arial, sans-serif;
-        }
-        #game-container {
-            position: relative;
-            width: 100vw;
-            height: 100vh;
-            background: linear-gradient(to bottom, #4a90e2, #50e3c2);
-        }
-        #ui {
-            position: absolute;
-            top: 15px;
-            left: 15px;
+            background: #2c3e50;
             color: white;
-            font-size: 20px;
-            font-weight: bold;
-            text-shadow: 2px 2px 4px rgba(0,0,0,0.6);
-            z-index: 10;
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            overflow: hidden;
+            touch-action: none;
         }
-        .platform {
-            position: absolute;
-            background-color: #4a4a4a;
-            border-top: 4px solid #2e2e2e;
-            border-radius: 4px;
-        }
-        #player {
-            position: absolute;
-            width: 30px;
-            height: 30px;
-            background-color: #ff4757;
-            border-radius: 4px;
-            box-shadow: 0 0 5px rgba(0,0,0,0.3);
-            z-index: 5;
-        }
-        .coin {
-            position: absolute;
-            width: 16px;
-            height: 16px;
-            background-color: #ffd700;
-            border-radius: 50%;
-            border: 2px solid #ffa500;
-            z-index: 4;
-        }
-        .enemy {
-            position: absolute;
-            width: 26px;
-            height: 26px;
-            background-color: #d63031;
-            border-radius: 4px;
-            z-index: 4;
-        }
-        #door {
-            position: absolute;
-            width: 32px;
-            height: 48px;
-            background-color: #8e44ad;
-            border: 3px solid #6c5ce7;
-            border-radius: 4px 4px 0 0;
-            z-index: 3;
+        canvas {
+            background: #34495e;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+            border-radius: 8px;
+            max-width: 100%;
+            height: auto;
         }
         .controls {
-            position: absolute;
-            bottom: 20px;
-            width: 100%;
             display: flex;
             justify-content: space-between;
-            padding: 0 20px;
-            z-index: 20;
+            width: 800px;
+            max-width: 100%;
+            padding: 10px 20px;
+            box-sizing: border-box;
         }
         .btn-group {
             display: flex;
             gap: 15px;
         }
-        .btn {
-            width: 60px;
-            height: 60px;
-            background: rgba(255, 255, 255, 0.3);
-            border: 2px solid rgba(255, 255, 255, 0.6);
+        .ctrl-btn {
+            background: rgba(255, 255, 255, 0.2);
+            border: 2px solid white;
+            color: white;
+            font-size: 24px;
+            width: 70px;
+            height: 70px;
             border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
-            color: white;
-            font-size: 24px;
-            touch-action: manipulation;
+            user-select: none;
+            cursor: pointer;
+            outline: none;
+            font-weight: bold;
         }
-        .btn:active {
-            background: rgba(255, 255, 255, 0.6);
+        .ctrl-btn:active {
+            background: rgba(255, 255, 255, 0.5);
+        }
+        #jumpBtn {
+            background: rgba(231, 76, 60, 0.6);
+            border-color: #e74c3c;
         }
     </style>
 </head>
 <body>
 
-<div id="game-container">
-    <div id="ui">
-        <div id="level-txt">Bölüm: 1</div>
-        <div id="coin-txt">Altın: 0 / 5</div>
-    </div>
-
-    <div id="player"></div>
-    <div id="door"></div>
-    <div id="platforms-holder"></div>
-    <div id="coins-holder"></div>
-    <div id="enemies-holder"></div>
-
+    <h2 id="info" style="margin: 5px;">Bölüm 1 - Başlangıç</h2>
+    <canvas id="gameCanvas" width="800" height="450"></canvas>
+    
     <div class="controls">
         <div class="btn-group">
-            <div class="btn" id="btn-left">◄</div>
-            <div class="btn" id="btn-right">►</div>
+            <div class="ctrl-btn" id="leftBtn">&#9664;</div>
+            <div class="ctrl-btn" id="rightBtn">&#9654;</div>
         </div>
-        <div class="btn" id="btn-jump">▲</div>
+        <div class="btn-group">
+            <div class="ctrl-btn" id="jumpBtn">&#9650;</div>
+        </div>
     </div>
-</div>
 
-<script>
-// Ses Sentezleyicisi (Web Audio API)
-const AudioContext = window.AudioContext || window.webkitAudioContext;
-let audioCtx = null;
-let bgmInterval = null;
+    <script>
+        const canvas = document.getElementById("gameCanvas");
+        const ctx = canvas.getContext("2d");
+        const info = document.getElementById("info");
 
-function initAudio() {
-    if (!audioCtx) {
-        audioCtx = new AudioContext();
-        startBGM();
-    } else if (audioCtx.state === 'suspended') {
-        audioCtx.resume();
-    }
-}
+        let score = 0;
+        let level = 1;
 
-// Ses Efektleri
-function playSound(type) {
-    if (!audioCtx) return;
-    const now = audioCtx.currentTime;
-    
-    if (type === 'hit') { // Düşman Ezme Sesi
-        const osc = audioCtx.createOscillator();
-        const gain = audioCtx.createGain();
-        osc.type = 'triangle';
-        osc.frequency.setValueAtTime(300, now);
-        osc.frequency.exponentialRampToValueAtTime(80, now + 0.15);
-        gain.gain.setValueAtTime(0.3, now);
-        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.15);
-        osc.connect(gain);
-        gain.connect(audioCtx.destination);
-        osc.start(now);
-        osc.stop(now + 0.15);
-    } 
-    else if (type === 'die') { // Minecraft Tarzı Ölme Sesi
-        const osc = audioCtx.createOscillator();
-        const gain = audioCtx.createGain();
-        osc.type = 'sawtooth';
-        osc.frequency.setValueAtTime(150, now);
-        osc.frequency.linearRampToValueAtTime(40, now + 0.3);
-        gain.gain.setValueAtTime(0.4, now);
-        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
-        osc.connect(gain);
-        gain.connect(audioCtx.destination);
-        osc.start(now);
-        osc.stop(now + 0.3);
-    } 
-    else if (type === 'win') { // Zafer / Kutlama Melodisi (2 saniye)
-        const notes = [261.63, 329.63, 392.00, 523.25];
-        notes.forEach((freq, idx) => {
-            const osc = audioCtx.createOscillator();
-            const gain = audioCtx.createGain();
-            osc.type = 'sine';
-            osc.frequency.setValueAtTime(freq, now + idx * 0.12);
-            gain.gain.setValueAtTime(0.2, now + idx * 0.12);
-            gain.gain.exponentialRampToValueAtTime(0.01, now + idx * 0.12 + 0.25);
-            osc.connect(gain);
-            gain.connect(audioCtx.destination);
-            osc.start(now + idx * 0.12);
-            osc.stop(now + idx * 0.12 + 0.25);
-        });
-    }
-    else if (type === 'coin') { // Altın Alma Sesi
-        const osc = audioCtx.createOscillator();
-        const gain = audioCtx.createGain();
-        osc.type = 'sine';
-        osc.frequency.setValueAtTime(987.77, now);
-        osc.frequency.setValueAtTime(1318.51, now + 0.08);
-        gain.gain.setValueAtTime(0.15, now);
-        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.2);
-        osc.connect(gain);
-        gain.connect(audioCtx.destination);
-        osc.start(now);
-        osc.stop(now + 0.2);
-    }
-}
+        let player = {
+            x: 50,
+            y: 300,
+            width: 30,
+            height: 45,
+            vx: 0,
+            vy: 0,
+            speed: 5,
+            jumpStrength: -11,
+            gravity: 0.55,
+            grounded: false
+        };
 
-// Retro Arka Plan Müziği (Arka planda ritmik çalar)
-function startBGM() {
-    if (bgmInterval) return;
-    const bgmNotes = [261.63, 293.66, 329.63, 349.23, 392.00, 329.63, 261.63, 196.00];
-    let step = 0;
-    bgmInterval = setInterval(() => {
-        if (!audioCtx) return;
-        const now = audioCtx.currentTime;
-        const osc = audioCtx.createOscillator();
-        const gain = audioCtx.createGain();
-        osc.type = 'square';
-        osc.frequency.setValueAtTime(bgmNotes[step % bgmNotes.length], now);
-        gain.gain.setValueAtTime(0.03, now);
-        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.18);
-        osc.connect(gain);
-        gain.connect(audioCtx.destination);
-        osc.start(now);
-        osc.stop(now + 0.2);
-        step++;
-    }, 220);
-}
+        let keys = {};
+        window.addEventListener("keydown", e => keys[e.code] = true);
+        window.addEventListener("keyup", e => keys[e.code] = false);
 
-// Oyun Elemanları
-const container = document.getElementById('game-container');
-const playerEl = document.getElementById('player');
-const doorEl = document.getElementById('door');
-const platformsHolder = document.getElementById('platforms-holder');
-const coinsHolder = document.getElementById('coins-holder');
-const enemiesHolder = document.getElementById('enemies-holder');
-const coinTxt = document.getElementById('coin-txt');
-const levelTxt = document.getElementById('level-txt');
+        // Dokunmatik / Ekran Tuşları Kontrolü
+        function setupBtn(id, actionOn, actionOff) {
+            const btn = document.getElementById(id);
+            btn.addEventListener("touchstart", (e) => { e.preventDefault(); actionOn(); });
+            btn.addEventListener("touchend", (e) => { e.preventDefault(); actionOff(); });
+            btn.addEventListener("mousedown", (e) => { e.preventDefault(); actionOn(); });
+            btn.addEventListener("mouseup", (e) => { e.preventDefault(); actionOff(); });
+        }
 
-let currentLevel = 1;
-let coinsCollected = 0;
-let totalCoins = 0;
+        setupBtn("leftBtn", () => player.vx = -player.speed, () => { if(player.vx < 0) player.vx = 0; });
+        setupBtn("rightBtn", () => player.vx = player.speed, () => { if(player.vx > 0) player.vx = 0; });
+        setupBtn("jumpBtn", () => { if (player.grounded) { player.vy = player.jumpStrength; player.grounded = false; } }, () => {});
 
-let player = {
-    x: 50,
-    y: 100,
-    w: 30,
-    h: 30,
-    vx: 0,
-    vy: 0,
-    speed: 4,
-    jumpPower: -11,
-    grounded: false
-};
+        let platforms = [];
+        let movingPlatforms = [];
+        let hazards = [];
+        let coins = [];
+        let goal = {};
 
-const gravity = 0.5;
-let keys = { left: false, right: false, jump: false };
+        function loadLevel(lvl) {
+            platforms = [];
+            movingPlatforms = [];
+            hazards = [];
+            coins = [];
+            player.x = 50;
+            player.y = 200;
+            player.vx = 0;
+            player.vy = 0;
 
-// Bölümler (Aynı Görsel Tema, Farklı Parkur Yapısı)
-const levels = {
-    1: {
-        door: { x: 280, y: 120 },
-        platforms: [
-            { x: 0, y: 550, w: 400, h: 50 },
-            { x: 30, y: 450, w: 100, h: 15 },
-            { x: 160, y: 360, w: 100, h: 15 },
-            { x: 50, y: 270, w: 100, h: 15 },
-            { x: 200, y: 170, w: 140, h: 15 }
-        ],
-        coins: [
-            { x: 60, y: 410 },
-            { x: 190, y: 320 },
-            { x: 80, y: 230 },
-            { x: 230, y: 130 },
-            { x: 300, y: 130 }
-        ],
-        enemies: [
-            { x: 170, y: 334, w: 26, h: 26, minX: 160, maxX: 230, speed: 1.5, dir: 1, alive: true }
-        ]
-    },
-    2: { // Farklı Parkur Düzeni
-        door: { x: 50, y: 100 },
-        platforms: [
-            { x: 0, y: 550, w: 400, h: 50 },
-            { x: 220, y: 460, w: 120, h: 15 },
-            { x: 80, y: 370, w: 100, h: 15 },
-            { x: 220, y: 270, w: 120, h: 15 },
-            { x: 30, y: 150, w: 120, h: 15 }
-        ],
-        coins: [
-            { x: 250, y: 420 },
-            { x: 110, y: 330 },
-            { x: 260, y: 230 },
-            { x: 80, y: 110 }
-        ],
-        enemies: [
-            { x: 10, y: 524, w: 26, h: 26, minX: 10, maxX: 300, speed: 2, dir: 1, alive: true },
-            { x: 230, y: 244, w: 26, h: 26, minX: 220, maxX: 310, speed: 1.5, dir: 1, alive: true }
-        ]
-    }
-};
+            if (lvl === 1) {
+                info.innerText = "Bölüm 1 - Temel Parkurlar";
+                platforms.push({x: 0, y: 400, w: 1200, h: 50, color: "#2ecc71"});
+                platforms.push({x: 300, y: 320, w: 140, h: 20});
+                platforms.push({x: 500, y: 240, w: 140, h: 20});
+                platforms.push({x: 750, y: 180, w: 180, h: 20});
 
-let currentPlatformData = [];
-let currentCoinData = [];
-let currentEnemyData = [];
+                hazards.push({x: 450, y: 380, w: 50, h: 20});
+                
+                coins.push({x: 350, y: 280}, {x: 550, y: 200}, {x: 800, y: 140});
+                goal = {x: 1100, y: 300, w: 40, h: 100};
+            } else if (lvl === 2) {
+                info.innerText = "Bölüm 2 - Gelişmiş Zorlu Parkurlar ve Hareketli Platformlar!";
+                platforms.push({x: 0, y: 400, w: 1600, h: 50, color: "#34495e"});
+                platforms.push({x: 200, y: 320, w: 100, h: 20});
+                platforms.push({x: 400, y: 240, w: 100, h: 20});
 
-function loadLevel(lvl) {
-    currentLevel = lvl;
-    const data = levels[lvl];
-    if (!data) {
-        playSound('win');
-        alert("Tebrikler! Tüm bölümleri başardın!");
+                // Hareketli platformlar (Bölüm 2'nin ana zorluğu)
+                movingPlatforms.push({x: 600, y: 240, w: 100, h: 20, minX: 550, maxX: 850, speed: 2});
+                movingPlatforms.push({x: 950, y: 180, w: 100, h: 20, minX: 900, maxX: 1200, speed: 3});
+
+                hazards.push({x: 320, y: 380, w: 80, h: 20});
+                hazards.push({x: 750, y: 380, w: 120, h: 20});
+                hazards.push({x: 1250, y: 380, w: 100, h: 20});
+
+                coins.push({x: 230, y: 280}, {x: 430, y: 200}, {x: 700, y: 200}, {x: 1050, y: 140}, {x: 1400, y: 300});
+                goal = {x: 1500, y: 300, w: 40, h: 100};
+            }
+        }
+
+        loadLevel(level);
+
+        function update() {
+            if (keys["ArrowLeft"] || keys["KeyA"]) player.vx = -player.speed;
+            else if (keys["ArrowRight"] || keys["KeyD"]) player.vx = player.speed;
+
+            if ((keys["ArrowUp"] || keys["KeyW"] || keys["Space"]) && player.grounded) {
+                player.vy = player.jumpStrength;
+                player.grounded = false;
+            }
+
+            player.vy += player.gravity;
+            player.x += player.vx;
+            player.y += player.vy;
+
+            player.grounded = false;
+
+            let allPlats = [...platforms, ...movingPlatforms];
+            for (let p of allPlats) {
+                if (player.x < p.x + p.w && player.x + player.width > p.x &&
+                    player.y < p.y + p.h && player.y + player.height > p.y) {
+                    
+                    if (player.vy > 0 && player.y + player.height - player.vy <= p.y + 10) {
+                        player.y = p.y - player.height;
+                        player.vy = 0;
+                        player.grounded = true;
+                        if (p.speed) {
+                            player.x += p.speed * (p.dir || 1);
+                        }
+                    } else if (player.vy < 0 && player.y - player.vy >= p.y + p.h - 10) {
+                        player.y = p.y + p.h;
+                        player.vy = 0;
+                    } else if (player.vx > 0) {
+                        player.x = p.x - player.width;
+                    } else if (player.vx < 0) {
+                        player.x = p.x + p.w;
+                    }
+                }
+            }
+
+            for (let mp of movingPlatforms) {
+                if (!mp.dir) mp.dir = 1;
+                mp.x += mp.speed * mp.dir;
+                if (mp.x < mp.minX || mp.x > mp.maxX) {
+                    mp.dir *= -1;
+                }
+            }
+
+            for (let h of hazards) {
+                if (player.x < h.x + h.w && player.x + player.width > h.x &&
+                    player.y < h.y + h.h && player.y + player.height > h.y) {
+                    loadLevel(level);
+                }
+            }
+
+            if (player.y > canvas.height) {
+                loadLevel(level);
+            }
+
+            for (let i = coins.length - 1; i >= 0; i--) {
+                let c = coins[i];
+                let dist = Math.hypot((player.x + player.width/2) - (c.x + 10), (player.y + player.height/2) - (c.y + 10));
+                if (dist < 25) {
+                    coins.splice(i, 1);
+                    score += 10;
+                }
+            }
+
+            if (player.x < goal.x + goal.w && player.x + player.width > goal.x &&
+                player.y < goal.y + goal.h && player.y + player.height > goal.y) {
+                if (level === 1) {
+                    level = 2;
+                    loadLevel(2);
+                } else {
+                    alert("Tebrikler! Oyunu Tamamladınız! Puanınız: " + score);
+                    level = 1;
+                    score = 0;
+                    loadLevel(1);
+                }
+            }
+        }
+
+        function draw() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            let cameraX = player.x - 200;
+            if (cameraX < 0) cameraX = 0;
+
+            ctx.save();
+            ctx.translate(-cameraX, 0);
+
+            for (let p of platforms) {
+                ctx.fillStyle = p.color || "#7f8c8d";
+                ctx.fillRect(p.x, p.y, p.w, p.h);
+            }
+
+            for (let mp of movingPlatforms) {
+                ctx.fillStyle = "#9b59b6";
+                ctx.fillRect(mp.x, mp.y, mp.w, mp.h);
+            }
+
+            for (let h of hazards) {
+                ctx.fillStyle = "#e74c3c";
+                ctx.fillRect(h.x, h.y, h.w, h.h);
+            }
+
+            for (let c of coins) {
+                ctx.fillStyle = "#f1c40f";
+                ctx.beginPath();
+                ctx.arc(c.x + 10, c.y + 10, 10, 0, Math.PI * 2);
+                ctx.fill();
+            }
+
+            ctx.fillStyle = "#f39c12";
+            ctx.fillRect(goal.x, goal.y, goal.w, goal.h);
+            ctx.fillStyle = "#fff";
+            ctx.font = "12px Arial";
+            ctx.fillText("BİTİŞ", goal.x + 5, goal.y - 10);
+
+            ctx.fillStyle = "#3498db";
+            ctx.fillRect(player.x, player.y, player.width, player.height);
+
+            ctx.restore();
+
+            ctx.fillStyle = "white";
+            ctx.font = "20px Arial";
+            ctx.fillText("Puan: " + score, 20, 30);
+            ctx.fillText("Bölüm: " + level, 700, 30);
+        }
+
+        function loop() {
+            update();
+            draw();
+            requestAnimationFrame(loop);
+        }
+
         loadLevel(1);
-        return;
-    }
-
-    coinsCollected = 0;
-    totalCoins = data.coins.length;
-    levelTxt.innerText = "Bölüm: " + currentLevel;
-    coinTxt.innerText = `Altın: ${coinsCollected} / ${totalCoins}`;
-
-    player.x = 20;
-    player.y = 480;
-    player.vx = 0;
-    player.vy = 0;
-
-    doorEl.style.left = data.door.x + 'px';
-    doorEl.style.top = data.door.y + 'px';
-
-    // Platform Çizimi
-    platformsHolder.innerHTML = '';
-    currentPlatformData = data.platforms;
-    currentPlatformData.forEach(p => {
-        const div = document.createElement('div');
-        div.className = 'platform';
-        div.style.left = p.x + 'px';
-        div.style.top = p.y + 'px';
-        div.style.width = p.w + 'px';
-        div.style.height = p.h + 'px';
-        platformsHolder.appendChild(div);
-    });
-
-    // Altın Çizimi
-    coinsHolder.innerHTML = '';
-    currentCoinData = data.coins.map(c => {
-        const div = document.createElement('div');
-        div.className = 'coin';
-        div.style.left = c.x + 'px';
-        div.style.top = c.y + 'px';
-        coinsHolder.appendChild(div);
-        return { ...c, el: div, collected: false };
-    });
-
-    // Düşman Çizimi
-    enemiesHolder.innerHTML = '';
-    currentEnemyData = data.enemies.map(e => {
-        const div = document.createElement('div');
-        div.className = 'enemy';
-        div.style.left = e.x + 'px';
-        div.style.top = e.y + 'px';
-        enemiesHolder.appendChild(div);
-        return { ...e, el: div, alive: true };
-    });
-}
-
-// Tuş İletişimi
-const setupBtn = (id, key) => {
-    const el = document.getElementById(id);
-    const trigger = (e) => {
-        e.preventDefault();
-        initAudio();
-        keys[key] = true;
-    };
-    const release = (e) => {
-        e.preventDefault();
-        keys[key] = false;
-    };
-    el.addEventListener('touchstart', trigger);
-    el.addEventListener('touchend', release);
-    el.addEventListener('mousedown', trigger);
-    el.addEventListener('mouseup', release);
-};
-setupBtn('btn-left', 'left');
-setupBtn('btn-right', 'right');
-setupBtn('btn-jump', 'jump');
-
-window.addEventListener('keydown', e => {
-    initAudio();
-    if (e.key === 'ArrowLeft' || e.key === 'a') keys.left = true;
-    if (e.key === 'ArrowRight' || e.key === 'd') keys.right = true;
-    if (e.key === 'ArrowUp' || e.key === 'w' || e.key === ' ') keys.jump = true;
-});
-window.addEventListener('keyup', e => {
-    if (e.key === 'ArrowLeft' || e.key === 'a') keys.left = false;
-    if (e.key === 'ArrowRight' || e.key === 'd') keys.right = false;
-    if (e.key === 'ArrowUp' || e.key === 'w' || e.key === ' ') keys.jump = false;
-});
-
-function update() {
-    if (keys.left) player.vx = -player.speed;
-    else if (keys.right) player.vx = player.speed;
-    else player.vx = 0;
-
-    if (keys.jump && player.grounded) {
-        player.vy = player.jumpPower;
-        player.grounded = false;
-    }
-
-    player.vy += gravity;
-    player.x += player.vx;
-    player.y += player.vy;
-
-    // Platform Çarpışması
-    player.grounded = false;
-    currentPlatformData.forEach(p => {
-        if (player.x < p.x + p.w &&
-            player.x + player.w > p.x &&
-            player.y < p.y + p.h &&
-            player.y + player.h > p.y) {
-            
-            if (player.vy > 0 && player.y + player.h - player.vy <= p.y + 10) {
-                player.y = p.y - player.h;
-                player.vy = 0;
-                player.grounded = true;
-            }
-        }
-    });
-
-    if (player.x < 0) player.x = 0;
-    if (player.x + player.w > window.innerWidth) player.x = window.innerWidth - player.w;
-    
-    // Aşağı Düşüp Ölme
-    if (player.y > window.innerHeight) {
-        playSound('die');
-        loadLevel(currentLevel);
-    }
-
-    // Düşman Mantığı (Üstüne basınca ezilme, yandan değince ölme)
-    currentEnemyData.forEach(e => {
-        if (!e.alive) return;
-
-        e.x += e.speed * e.dir;
-        if (e.x >= e.maxX || e.x <= e.minX) e.dir *= -1;
-        e.el.style.left = e.x + 'px';
-
-        // Temas Kontrolü
-        if (player.x < e.x + e.w &&
-            player.x + player.w > e.x &&
-            player.y < e.y + e.h &&
-            player.y + player.h > e.y) {
-
-            // Üstüne zıplama kontrolü (Kafasına basma)
-            if (player.vy > 0 && player.y + player.h - player.vy <= e.y + 12) {
-                e.alive = false;
-                e.el.style.display = 'none';
-                player.vy = player.jumpPower * 0.7; // Zıplama sektirmesi
-                playSound('hit');
-            } else {
-                // Yanlardan/alttan temas (Oyuncu ölür)
-                playSound('die');
-                loadLevel(currentLevel);
-            }
-        }
-    });
-
-    // Altın Toplama
-    currentCoinData.forEach(c => {
-        if (!c.collected &&
-            player.x < c.x + 16 &&
-            player.x + player.w > c.x &&
-            player.y < c.y + 16 &&
-            player.y + player.h > c.y) {
-            c.collected = true;
-            c.el.style.display = 'none';
-            coinsCollected++;
-            playSound('coin');
-            coinTxt.innerText = `Altın: ${coinsCollected} / ${totalCoins}`;
-        }
-    });
-
-    // Kapıya Ulaşma ve Bölüm Geçişi
-    const doorX = parseInt(doorEl.style.left);
-    const doorY = parseInt(doorEl.style.top);
-    if (coinsCollected === totalCoins &&
-        player.x < doorX + 32 &&
-        player.x + player.w > doorX &&
-        player.y < doorY + 48 &&
-        player.y + player.h > doorY) {
-        playSound('win');
-        loadLevel(currentLevel + 1);
-    }
-
-    playerEl.style.left = player.x + 'px';
-    playerEl.style.top = player.y + 'px';
-
-    requestAnimationFrame(update);
-}
-
-loadLevel(1);
-update();
-</script>
+        loop();
+    </script>
 </body>
 </html>
