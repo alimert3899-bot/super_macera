@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Süper Macera - Mario</title>
+    <title>Gerçekçi Mario - Dikey Oyun</title>
     <style>
         * {
             box-sizing: border-box;
@@ -19,7 +19,7 @@
             align-items: center;
             height: 100vh;
             overflow: hidden;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-family: Arial, sans-serif;
         }
         #game-container {
             position: relative;
@@ -28,429 +28,396 @@
             height: 100vh;
             max-height: 750px;
             background: linear-gradient(to bottom, #3a7bd5, #3a6073);
-            box-shadow: 0 0 25px rgba(0,0,0,0.9);
+            box-shadow: 0 0 20px rgba(0,0,0,0.8);
             overflow: hidden;
+        }
+        
+        /* Ekranlar Genel */
+        .screen {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+            background: linear-gradient(to bottom, #2c3e50, #000);
+            color: white;
+            padding: 20px;
+            text-align: center;
+        }
+        .screen.hidden {
+            display: none !important;
+            pointer-events: none;
+        }
+
+        /* Ana Menü */
+        .main-title {
+            font-size: 38px;
+            color: #f1c40f;
+            margin-bottom: 40px;
+            text-shadow: 3px 3px 6px rgba(0,0,0,0.8);
+            font-weight: bold;
+        }
+        .menu-btn {
+            width: 220px;
+            padding: 15px;
+            font-size: 20px;
+            font-weight: bold;
+            background: #27ae60;
+            border: none;
+            color: white;
+            border-radius: 30px;
+            margin: 10px;
+            cursor: pointer;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+            transition: 0.2s;
+            z-index: 105;
+        }
+        .menu-btn:active { transform: scale(0.95); }
+        .menu-btn.settings-btn { background: #e67e22; }
+
+        /* Seviye Seçim Ekranı */
+        .levels-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+            margin-top: 20px;
+        }
+        .level-card {
+            width: 90px;
+            height: 90px;
+            background: rgba(255, 255, 255, 0.15);
+            border: 2px solid rgba(255, 255, 255, 0.4);
+            border-radius: 15px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 26px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: 0.2s;
+            z-index: 105;
+        }
+        .level-card.locked {
+            background: rgba(100, 100, 100, 0.3);
+            border-color: #555;
+            color: #777;
+        }
+        .level-card:active {
+            transform: scale(0.95);
+        }
+
+        /* Uyarı / Modaller */
+        .modal {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.85);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 200;
+            padding: 20px;
+        }
+        .modal.hidden {
+            display: none !important;
+            pointer-events: none;
+        }
+        .warning-text {
+            color: #e74c3c;
+            font-size: 20px;
+            font-weight: bold;
+            text-align: center;
+            margin-bottom: 25px;
+            line-height: 1.4;
+            text-shadow: 1px 1px 3px rgba(0,0,0,0.8);
+        }
+        .modal-btn {
+            padding: 10px 25px;
+            background: #3498db;
+            border: none;
+            color: white;
+            font-size: 16px;
+            border-radius: 20px;
+            font-weight: bold;
+            cursor: pointer;
+            z-index: 205;
+        }
+
+        /* Oyun İçi Arayüz ve Canvas */
+        #game-screen {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: linear-gradient(to bottom, #3a7bd5, #3a6073);
+            z-index: 50;
         }
         canvas {
             width: 100%;
             height: 100%;
             display: block;
         }
-
-        /* OYUN İÇİ ARAYÜZ (HUD) */
         .hud {
             position: absolute;
             top: 15px;
             left: 15px;
             color: #fff;
-            font-size: 18px;
+            font-size: 20px;
             font-weight: bold;
             text-shadow: 2px 2px 4px rgba(0,0,0,0.8);
-            z-index: 10;
-            display: none;
+            z-index: 60;
+        }
+        .back-menu-btn {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background: rgba(0,0,0,0.5);
+            border: 1px solid white;
+            color: white;
+            padding: 5px 12px;
+            border-radius: 8px;
+            font-weight: bold;
+            cursor: pointer;
+            z-index: 60;
         }
         .controls {
             position: absolute;
             bottom: 20px;
             width: 100%;
             padding: 0 20px;
-            display: none;
+            display: flex;
             justify-content: space-between;
             align-items: center;
-            z-index: 10;
+            z-index: 60;
         }
-        .d-pad {
-            display: flex;
-            gap: 15px;
-        }
+        .d-pad { display: flex; gap: 15px; }
         .btn {
-            width: 65px;
-            height: 65px;
+            width: 65px; height: 65px;
             background: rgba(255, 255, 255, 0.25);
             border: 2px solid rgba(255, 255, 255, 0.5);
             border-radius: 50%;
-            color: white;
-            font-size: 24px;
-            font-weight: bold;
-            display: flex;
-            justify-content: center;
-            align-items: center;
+            color: white; font-size: 24px; font-weight: bold;
+            display: flex; justify-content: center; align-items: center;
             backdrop-filter: blur(5px);
             touch-action: manipulation;
-            cursor: pointer;
         }
-        .btn:active {
-            background: rgba(255, 255, 255, 0.5);
-            transform: scale(0.95);
-        }
-        .btn-jump {
-            width: 75px;
-            height: 75px;
-            background: rgba(231, 76, 60, 0.6);
-            border-color: rgba(255, 255, 255, 0.7);
-        }
-
-        /* EKRAN MODALLARI & MENÜLER */
-        .screen {
-            position: absolute;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(15, 23, 42, 0.95);
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            color: white;
-            z-index: 30;
-            text-align: center;
-            padding: 20px;
-        }
-        .screen h1 {
-            font-size: 36px;
-            margin-bottom: 25px;
-            color: #f1c40f;
-            text-shadow: 0 4px 10px rgba(241, 196, 15, 0.4);
-            letter-spacing: 1px;
-        }
-
-        .btn-main {
-            width: 220px;
-            padding: 15px;
-            margin: 10px 0;
-            font-size: 18px;
-            font-weight: bold;
-            color: white;
-            background: #2ecc71;
-            border: none;
-            border-radius: 30px;
-            cursor: pointer;
-            box-shadow: 0 5px 15px rgba(46, 204, 113, 0.4);
-            transition: all 0.2s;
-        }
-        .btn-main:active {
-            transform: scale(0.96);
-        }
-        .btn-disabled {
-            background: #475569 !important;
-            color: #94a3b8 !important;
-            box-shadow: none !important;
-            cursor: not-allowed;
-            opacity: 0.7;
-        }
-
-        /* BÖLÜM SEÇME GRID */
-        .level-grid {
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 12px;
-            width: 100%;
-            max-width: 320px;
-            margin-bottom: 25px;
-        }
-        .level-btn {
-            aspect-ratio: 1;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            font-size: 18px;
-            font-weight: bold;
-            border-radius: 12px;
-            border: 2px solid transparent;
-            cursor: pointer;
-        }
-        .level-active {
-            background: #e67e22;
-            color: white;
-            border-color: #f39c12;
-            box-shadow: 0 0 15px rgba(230, 126, 34, 0.6);
-        }
-        .level-locked {
-            background: #1e293b;
-            color: #475569;
-            border-color: #334155;
-            cursor: not-allowed;
-        }
-
-        /* UYARI BİLDİRİMİ (TOAST) */
-        #toast {
-            position: absolute;
-            bottom: 30px;
-            background: #e74c3c;
-            color: white;
-            padding: 12px 20px;
-            border-radius: 20px;
-            font-size: 14px;
-            font-weight: bold;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.5);
-            display: none;
-            z-index: 50;
-            animation: fadeIn 0.3s ease;
-        }
-
-        .stars { font-size: 38px; margin: 10px 0; color: #f1c40f; }
+        .btn:active { background: rgba(255, 255, 255, 0.5); transform: scale(0.95); }
+        .btn-jump { width: 75px; height: 75px; background: rgba(231, 76, 60, 0.6); border-color: rgba(255, 255, 255, 0.7); }
+        .btn-jump:active { background: rgba(231, 76, 60, 0.9); }
     </style>
 </head>
 <body>
 
 <div id="game-container">
-    <div class="hud" id="hud">Altın: <span id="coin-count">0</span> / <span id="max-coins">0</span></div>
-    <canvas id="canvas"></canvas>
     
-    <!-- Ekran Üstü Kontroller -->
-    <div class="controls" id="controls">
-        <div class="d-pad">
-            <div class="btn" id="btn-left">◄</div>
-            <div class="btn" id="btn-right">►</div>
-        </div>
-        <div class="btn btn-jump" id="btn-jump">▲</div>
-    </div>
-
-    <!-- 1. ANA MENÜ -->
+    <!-- 1. ANA MENÜ EKRANI -->
     <div id="main-menu" class="screen">
-        <h1>SÜPER MACERA</h1>
-        <button class="btn-main" onclick="openLevelSelect()">BAŞLA</button>
-        <button class="btn-main btn-disabled" onclick="showToast('Ayarlar gelecek güncellemede eklenecektir!')">AYARLAR</button>
+        <h1 class="main-title">GERÇEKÇİ MARIO</h1>
+        <button class="menu-btn" id="start-btn">BAŞLA</button>
+        <button class="menu-btn settings-btn" id="settings-btn">AYARLAR</button>
     </div>
 
-    <!-- 2. BÖLÜM SEÇME MENÜSÜ -->
-    <div id="level-menu" class="screen" style="display: none;">
-        <h2 style="margin-bottom: 20px; color: #38bdf8;">Bölüm Seç</h2>
-        <div class="level-grid" id="level-grid"></div>
-        <button class="btn-main" style="width: 150px; background: #64748b;" onclick="openMainMenu()">Geri</button>
+    <!-- 2. BÖLÜM SEÇİM EKRANI -->
+    <div id="level-select-screen" class="screen hidden">
+        <h2 style="margin-bottom: 20px; color:#f1c40f;">BÖLÜM SEÇ</h2>
+        <div class="levels-grid" id="levels-container"></div>
+        <button class="menu-btn" id="back-to-main-btn" style="margin-top: 30px; width: 140px; font-size: 16px; background:#555;">Geri</button>
     </div>
 
-    <!-- 3. GAME OVER EKRANI -->
-    <div id="game-over" class="screen" style="display: none;">
-        <h1 style="color: #e74c3c;">ÖLDÜN!</h1>
-        <p style="margin-bottom: 20px; color: #cbd5e1;">Düştün veya Yaratığa Çarptın!</p>
-        <button class="btn-main" onclick="restartGame()">Tekrar Oyna</button>
-        <button class="btn-main" style="background: #64748b;" onclick="openMainMenu()">Ana Menü</button>
+    <!-- 3. GENEL UYARI MODALI -->
+    <div id="warning-modal" class="modal hidden">
+        <div class="warning-text" id="warning-msg">Gelecek güncellemelerde gelecek. Şu anda kullanılamaz</div>
+        <button class="modal-btn" id="warning-close-btn">Tamam</button>
     </div>
 
-    <!-- 4. KAZANMA EKRANI -->
-    <div id="win-screen" class="screen" style="display: none;">
-        <h1 style="color: #2ecc71;">TEBRİKLER!</h1>
-        <p>Bölüm 1 Tamamlandı!</p>
-        <div class="stars" id="star-rating">☆☆☆</div>
-        <p id="coin-result-text" style="font-size: 14px; color: #cbd5e1; margin-bottom: 20px;"></p>
+    <!-- 4. OYUN EKRANI -->
+    <div id="game-screen" class="screen hidden" style="padding:0; background:none;">
+        <div class="hud">Altın: <span id="coin-count">0</span></div>
+        <button class="back-menu-btn" id="in-game-back-btn">Menü</button>
+        <canvas id="canvas"></canvas>
         
-        <button class="btn-main" onclick="restartGame()">Tekrar Oyna</button>
-        <button class="btn-main btn-disabled" onclick="showToast('Sıradaki bölüm gelecek güncellemede gelecek!')">Sıradaki Bölüm</button>
-        <button class="btn-main" style="background: #64748b;" onclick="openMainMenu()">Ana Menü</button>
+        <div class="controls">
+            <div class="d-pad">
+                <div class="btn" id="btn-left">◄</div>
+                <div class="btn" id="btn-right">►</div>
+            </div>
+            <div class="btn btn-jump" id="btn-jump">▲</div>
+        </div>
+
+        <!-- Game Over Modali -->
+        <div id="game-over" class="modal hidden" style="background:rgba(0,0,0,0.75);">
+            <h1 style="font-size:36px; color:#e74c3c; margin-bottom:10px;">ÖLDÜN!</h1>
+            <p>Yaratığa değdin veya boşluğa düştün.</p>
+            <button class="modal-btn" id="restart-btn" style="background:#2ecc71; margin-top:15px;">Tekrar Dene</button>
+            <button class="modal-btn" id="game-over-menu-btn" style="background:#555; margin-top:10px;">Ana Menü</button>
+        </div>
     </div>
 
-    <!-- Bildirim Balonu -->
-    <div id="toast"></div>
 </div>
 
 <script>
 const canvas = document.getElementById('canvas');
 const ctx = canvas.getContext('2d');
-
-// UI Elemanları
-const hud = document.getElementById('hud');
-const controls = document.getElementById('controls');
-const mainMenu = document.getElementById('main-menu');
-const levelMenu = document.getElementById('level-menu');
-const gameOverScreen = document.getElementById('game-over');
-const winScreen = document.getElementById('win-screen');
-const levelGrid = document.getElementById('level-grid');
-const coinDisplay = document.getElementById('coin-count');
-const maxCoinsDisplay = document.getElementById('max-coins');
-const starRating = document.getElementById('star-rating');
-const coinResultText = document.getElementById('coin-result-text');
-const toast = document.getElementById('toast');
-
 canvas.width = 420;
 canvas.height = 750;
 
-let coins = 0;
-let isGameOver = false;
-let isGameWon = false;
-let isPlaying = false;
-let gameTime = 0;
-let cameraX = 0;
+// Ekran Elementleri
+const mainMenu = document.getElementById('main-menu');
+const levelSelectScreen = document.getElementById('level-select-screen');
+const gameScreen = document.getElementById('game-screen');
+const warningModal = document.getElementById('warning-modal');
+const warningMsg = document.getElementById('warning-msg');
+const warningCloseBtn = document.getElementById('warning-close-btn');
+const gameOverScreen = document.getElementById('game-over');
+const coinDisplay = document.getElementById('coin-count');
 
+// Buton Olayları (Event Listeners ile garantiye alındı)
+document.getElementById('start-btn').addEventListener('click', () => {
+    mainMenu.classList.add('hidden');
+    levelSelectScreen.classList.remove('hidden');
+});
+
+document.getElementById('settings-btn').addEventListener('click', () => {
+    showWarning("Gelecek güncellemelerde gelecek. Şu anda kullanılamaz.");
+});
+
+document.getElementById('back-to-main-btn').addEventListener('click', () => {
+    backToMainMenu();
+});
+
+document.getElementById('in-game-back-btn').addEventListener('click', () => {
+    backToMainMenu();
+});
+
+warningCloseBtn.addEventListener('click', () => {
+    warningModal.classList.add('hidden');
+});
+
+document.getElementById('restart-btn').addEventListener('click', () => {
+    restartGame();
+});
+
+document.getElementById('game-over-menu-btn').addEventListener('click', () => {
+    backToMainMenu();
+});
+
+// 8 Bölümü Oluştur
+const levelsContainer = document.getElementById('levels-container');
+levelsContainer.innerHTML = '';
+for (let i = 1; i <= 8; i++) {
+    const card = document.createElement('div');
+    card.classList.add('level-card');
+    if (i > 1) card.classList.add('locked');
+    card.innerText = i;
+    card.addEventListener('click', () => {
+        if (i === 1) {
+            startLevel(1);
+        } else {
+            showWarning("Gelecek güncellemelerde gelecek. Şu anda kullanılamaz.");
+        }
+    });
+    levelsContainer.appendChild(card);
+}
+
+function backToMainMenu() {
+    isGameActive = false;
+    gameScreen.classList.add('hidden');
+    gameOverScreen.classList.add('hidden');
+    levelSelectScreen.classList.add('hidden');
+    warningModal.classList.add('hidden');
+    mainMenu.classList.remove('hidden');
+}
+
+function showWarning(text) {
+    warningMsg.innerText = text;
+    warningModal.classList.remove('hidden');
+}
+
+// Oyun Değişkenleri
+let isGameActive = false;
+let coins = 0;
+let gameTime = 0;
 const keys = { left: false, right: false, jump: false };
 const gravity = 0.55;
+const groundY = 620;
 
-// Karakter Fizikleri
 const player = {
-    x: 50, y: 500,
-    width: 30, height: 46,
-    vx: 0, vy: 0,
-    speed: 2.8, jumpPower: -11.8,
-    grounded: false
+    x: 50, y: 500, width: 32, height: 48,
+    vx: 0, vy: 0, speed: 4.5, jumpPower: -12.5, grounded: false
 };
-
-// --- HARİTA TASARIMI (Bölüm 1) ---
-const platforms = [
-    { x: 0, y: 640, width: 800, height: 110 },
-    { x: 880, y: 640, width: 700, height: 110 },
-    { x: 1640, y: 640, width: 600, height: 110 }
-];
-
-const movingPlatforms = [
-    { x: 810, y: 550, width: 120, height: 20, startX: 810, endX: 860, vx: 0.6 }
-];
 
 const blocks = [
-    { x: 300, y: 500, width: 40, height: 40, hit: false, bounce: 0 },
-    { x: 500, y: 500, width: 40, height: 40, hit: false, bounce: 0 },
-    { x: 1100, y: 500, width: 40, height: 40, hit: false, bounce: 0 }
+    { x: 100, y: 480, width: 40, height: 40, hit: false, bounce: 0 },
+    { x: 220, y: 400, width: 40, height: 40, hit: false, bounce: 0 },
+    { x: 310, y: 480, width: 40, height: 40, hit: false, bounce: 0 }
 ];
 
-let enemies = [
-    { x: 1150, y: 605, width: 35, height: 35, vx: -0.8, minX: 950, maxX: 1350, alive: true }
-];
-
-const elevator = {
-    x: 1950, y: 500, width: 70, height: 140,
-    doorProgress: 0, isTriggered: false, timer: 0
+const enemy = {
+    startX: 250,
+    x: 250,
+    y: groundY - 35,
+    width: 35,
+    height: 35,
+    vx: -1.5,
+    alive: true
 };
 
-let particles = [];
-let grassBlades = [];
+const clouds = [
+    { x: 50, y: 80, scale: 0.8, speed: 0.2 },
+    { x: 250, y: 150, scale: 1.2, speed: 0.4 },
+    { x: 120, y: 280, scale: 0.6, speed: 0.15 }
+];
 
-for (let i = 0; i < 2300; i += 4) {
+const grassBlades = [];
+for (let i = 0; i < canvas.width; i += 3) {
     grassBlades.push({
         x: i,
         height: 12 + Math.random() * 10,
+        angle: Math.random() * 0.2 - 0.1,
         speed: 0.05 + Math.random() * 0.05
     });
 }
 
-maxCoinsDisplay.innerText = blocks.length;
-
-// --- MENÜ VE NAVİGASYON FONKSİYONLARI ---
-
-function openMainMenu() {
-    isPlaying = false;
-    mainMenu.style.display = 'flex';
-    levelMenu.style.display = 'none';
-    gameOverScreen.style.display = 'none';
-    winScreen.style.display = 'none';
-    hud.style.display = 'none';
-    controls.style.display = 'none';
-}
-
-function openLevelSelect() {
-    mainMenu.style.display = 'none';
-    levelMenu.style.display = 'flex';
-    renderLevelGrid();
-}
-
-function renderLevelGrid() {
-    levelGrid.innerHTML = '';
-    for (let i = 1; i <= 15; i++) {
-        const btn = document.createElement('div');
-        btn.classList.add('level-btn');
-        btn.innerText = i;
-        
-        if (i === 1) {
-            btn.classList.add('level-active');
-            btn.onclick = () => startLevel(1);
-        } else {
-            btn.classList.add('level-locked');
-            btn.onclick = () => showToast('Bu bölüm gelecek güncellemede açılacaktır!');
-        }
-        levelGrid.appendChild(btn);
-    }
-}
+let particles = [];
 
 function startLevel(levelNum) {
-    levelMenu.style.display = 'none';
-    hud.style.display = 'block';
-    controls.style.display = 'flex';
-    restartGame();
-    isPlaying = true;
-}
-
-function showToast(msg) {
-    toast.innerText = msg;
-    toast.style.display = 'block';
-    setTimeout(() => {
-        toast.style.display = 'none';
-    }, 2500);
-}
-
-function restartGame() {
-    isGameOver = false;
-    isGameWon = false;
+    mainMenu.classList.add('hidden');
+    levelSelectScreen.classList.add('hidden');
+    gameScreen.classList.remove('hidden');
+    
+    resetPlayerAndEnemy();
     coins = 0;
     coinDisplay.innerText = coins;
-    cameraX = 0;
+    blocks.forEach(b => b.hit = false);
+    gameOverScreen.classList.add('hidden');
+    isGameActive = true;
+    
+    requestAnimationFrame(loop);
+}
+
+function resetPlayerAndEnemy() {
     player.x = 50;
     player.y = 500;
     player.vx = 0;
     player.vy = 0;
-    player.grounded = false;
-
-    blocks.forEach(b => { b.hit = false; b.bounce = 0; });
-    enemies.forEach(e => { e.alive = true; e.x = 1150; });
-    elevator.isTriggered = false;
-    elevator.doorProgress = 0;
-    elevator.timer = 0;
-
-    gameOverScreen.style.display = 'none';
-    winScreen.style.display = 'none';
+    
+    enemy.x = enemy.startX;
+    enemy.y = groundY - 35;
+    enemy.vx = -1.5;
+    enemy.alive = true;
 }
 
-function triggerGameOver() {
-    isGameOver = true;
-    gameOverScreen.style.display = 'flex';
+function restartGame() {
+    resetPlayerAndEnemy();
+    coins = 0;
+    coinDisplay.innerText = coins;
+    blocks.forEach(b => b.hit = false);
+    gameOverScreen.classList.add('hidden');
+    isGameActive = true;
 }
 
-function triggerWin() {
-    isGameWon = true;
-    let starsCount = coins === blocks.length ? '★★★' : coins > 0 ? '★★☆' : '★☆☆';
-    starRating.innerText = starsCount;
-    coinResultText.innerText = `Toplanan Altın: ${coins} / ${blocks.length}`;
-    winScreen.style.display = 'flex';
-}
-
-function spawnParticles(x, y, color) {
-    for (let i = 0; i < 8; i++) {
-        particles.push({
-            x: x, y: y,
-            vx: (Math.random() - 0.5) * 4,
-            vy: (Math.random() - 0.5) * 4 - 2,
-            size: Math.random() * 4 + 2,
-            alpha: 1,
-            color: color
-        });
-    }
-}
-
-// --- DOKUNMATİK VE KLAVYE KONTROLLERİ ---
-function bindTouchButton(id, keyName) {
-    const el = document.getElementById(id);
-    if (!el) return;
-    el.addEventListener('touchstart', (e) => { e.preventDefault(); keys[keyName] = true; });
-    el.addEventListener('touchend', (e) => { e.preventDefault(); keys[keyName] = false; });
-    el.addEventListener('mousedown', (e) => { e.preventDefault(); keys[keyName] = true; });
-    el.addEventListener('mouseup', (e) => { e.preventDefault(); keys[keyName] = false; });
-}
-
-bindTouchButton('btn-left', 'left');
-bindTouchButton('btn-right', 'right');
-bindTouchButton('btn-jump', 'jump');
-
-window.addEventListener('keydown', (e) => {
-    if (e.key === 'ArrowLeft' || e.key === 'a') keys.left = true;
-    if (e.key === 'ArrowRight' || e.key === 'd') keys.right = true;
-    if (e.key === 'ArrowUp' || e.key === 'w' || e.key === ' ') keys.jump = true;
-});
-
-window.addEventListener('keyup', (e) => {
-    if (e.key === 'ArrowLeft' || e.key === 'a') keys.left = false;
-    if (e.key === 'ArrowRight' || e.key === 'd') keys.right = false;
-    if (e.key === 'ArrowUp' || e.key === 'w' || e.key === ' ') keys.jump = false;
-});
-
-// --- ÇİZİM VE OYUN MANTIĞI ---
-
+// Çizim Fonksiyonları
 function drawSun() {
-    ctx.save();
     let gradient = ctx.createRadialGradient(340, 70, 10, 340, 70, 80);
     gradient.addColorStop(0, 'rgba(255, 255, 220, 1)');
     gradient.addColorStop(0.2, 'rgba(255, 220, 100, 0.8)');
@@ -459,173 +426,118 @@ function drawSun() {
     ctx.beginPath();
     ctx.arc(340, 70, 80, 0, Math.PI * 2);
     ctx.fill();
-    ctx.restore();
 }
 
 function drawClouds() {
     ctx.fillStyle = 'rgba(255, 255, 255, 0.85)';
-    [
-        { x: 100, y: 80, scale: 0.9 },
-        { x: 600, y: 120, scale: 1.1 },
-        { x: 1200, y: 70, scale: 0.8 },
-        { x: 1700, y: 110, scale: 1.0 }
-    ].forEach(c => {
-        let drawX = c.x - cameraX * 0.2;
-        ctx.save();
+    clouds.forEach(c => {
+        c.x += c.speed;
+        if (c.x - 100 > canvas.width) c.x = -100;
+
         ctx.beginPath();
-        ctx.arc(drawX, c.y, 20 * c.scale, 0, Math.PI * 2);
-        ctx.arc(drawX + 25 * c.scale, c.y - 10 * c.scale, 25 * c.scale, 0, Math.PI * 2);
-        ctx.arc(drawX + 50 * c.scale, c.y, 20 * c.scale, 0, Math.PI * 2);
+        ctx.arc(c.x, c.y, 20 * c.scale, 0, Math.PI * 2);
+        ctx.arc(c.x + 25 * c.scale, c.y - 10 * c.scale, 25 * c.scale, 0, Math.PI * 2);
+        ctx.arc(c.x + 50 * c.scale, c.y, 20 * c.scale, 0, Math.PI * 2);
         ctx.fill();
-        ctx.restore();
     });
 }
 
-function drawPlatforms() {
-    platforms.forEach(p => {
-        let drawX = p.x - cameraX;
-        let earthGrad = ctx.createLinearGradient(0, p.y, 0, p.y + p.height);
-        earthGrad.addColorStop(0, '#5d4037');
-        earthGrad.addColorStop(1, '#2d1b14');
-        ctx.fillStyle = earthGrad;
-        ctx.fillRect(drawX, p.y, p.width, p.height);
+function drawGrass() {
+    let earthGrad = ctx.createLinearGradient(0, groundY, 0, canvas.height);
+    earthGrad.addColorStop(0, '#5d4037');
+    earthGrad.addColorStop(1, '#2d1b14');
+    ctx.fillStyle = earthGrad;
+    ctx.fillRect(0, groundY, canvas.width, canvas.height - groundY);
 
-        ctx.fillStyle = '#2e7d32';
-        ctx.fillRect(drawX, p.y - 4, p.width, 6);
+    ctx.fillStyle = '#2e7d32';
+    ctx.fillRect(0, groundY - 4, canvas.width, 6);
 
-        ctx.lineWidth = 2;
-        grassBlades.forEach(blade => {
-            if (blade.x >= p.x && blade.x <= p.x + p.width) {
-                let bladeDrawX = blade.x - cameraX;
-                let wind = Math.sin(gameTime * blade.speed + blade.x) * 4;
-                let tipX = bladeDrawX + wind;
-                let tipY = p.y - blade.height;
+    ctx.lineWidth = 2;
+    grassBlades.forEach((blade) => {
+        let wind = Math.sin(gameTime * blade.speed + blade.x) * 4;
+        let tipX = blade.x + wind;
+        let tipY = groundY - blade.height;
 
-                let grad = ctx.createLinearGradient(bladeDrawX, p.y, tipX, tipY);
-                grad.addColorStop(0, '#1b5e20');
-                grad.addColorStop(1, '#76ff03');
+        let grad = ctx.createLinearGradient(blade.x, groundY, tipX, tipY);
+        grad.addColorStop(0, '#1b5e20');
+        grad.addColorStop(1, '#76ff03');
 
-                ctx.strokeStyle = grad;
-                ctx.beginPath();
-                ctx.moveTo(bladeDrawX, p.y);
-                ctx.quadraticCurveTo(bladeDrawX, p.y - blade.height / 2, tipX, tipY);
-                ctx.stroke();
-            }
-        });
-    });
-
-    movingPlatforms.forEach(mp => {
-        let drawX = mp.x - cameraX;
-        ctx.fillStyle = '#8e44ad';
-        ctx.fillRect(drawX, mp.y, mp.width, mp.height);
-        ctx.strokeStyle = '#9b59b6';
-        ctx.lineWidth = 3;
-        ctx.strokeRect(drawX, mp.y, mp.width, mp.height);
+        ctx.strokeStyle = grad;
+        ctx.beginPath();
+        ctx.moveTo(blade.x, groundY);
+        ctx.quadraticCurveTo(blade.x, groundY - blade.height / 2, tipX, tipY);
+        ctx.stroke();
     });
 }
 
 function drawPlayer() {
-    let drawX = player.x - cameraX;
     ctx.save();
-    
-    if (player.grounded) {
-        ctx.fillStyle = 'rgba(0,0,0,0.3)';
-        ctx.beginPath();
-        ctx.ellipse(drawX + player.width/2, player.y + player.height, player.width/2, 4, 0, 0, Math.PI * 2);
-        ctx.fill();
-    }
+    ctx.fillStyle = 'rgba(0,0,0,0.3)';
+    ctx.beginPath();
+    ctx.ellipse(player.x + player.width/2, groundY, player.width/2, 4, 0, 0, Math.PI * 2);
+    ctx.fill();
 
-    let bodyGrad = ctx.createLinearGradient(drawX, player.y, drawX + player.width, player.y + player.height);
-    bodyGrad.addColorStop(0, '#00c6ff');
-    bodyGrad.addColorStop(1, '#0072ff');
+    let bodyGrad = ctx.createLinearGradient(player.x, player.y, player.x + player.width, player.y + player.height);
+    bodyGrad.addColorStop(0, '#00b09b'); 
+    bodyGrad.addColorStop(1, '#96c93d');
     ctx.fillStyle = bodyGrad;
-    ctx.fillRect(drawX + 4, player.y + 16, player.width - 8, player.height - 16);
+    ctx.fillRect(player.x + 4, player.y + 16, player.width - 8, player.height - 16);
 
-    let headGrad = ctx.createLinearGradient(drawX, player.y, drawX, player.y + 16);
-    headGrad.addColorStop(0, '#11998e');
-    headGrad.addColorStop(1, '#38ef7d');
+    let headGrad = ctx.createLinearGradient(player.x, player.y, player.x, player.y + 16);
+    headGrad.addColorStop(0, '#0ba360');
+    headGrad.addColorStop(1, '#3cba92');
     ctx.fillStyle = headGrad;
     ctx.beginPath();
-    ctx.arc(drawX + player.width/2, player.y + 12, 12, 0, Math.PI * 2);
+    ctx.arc(player.x + player.width/2, player.y + 12, 12, 0, Math.PI * 2);
     ctx.fill();
 
     ctx.fillStyle = '#fff';
-    ctx.fillRect(drawX + 18, player.y + 8, 4, 4);
+    ctx.fillRect(player.x + 18, player.y + 8, 4, 4);
     ctx.restore();
 }
 
 function drawBlocks() {
     blocks.forEach(b => {
-        let drawX = b.x - cameraX;
         let drawY = b.y + b.bounce;
-
-        ctx.save();
         if (b.hit) {
             ctx.fillStyle = '#7f8c8d';
-            ctx.fillRect(drawX, drawY, b.width, b.height);
+            ctx.fillRect(b.x, drawY, b.width, b.height);
         } else {
-            let grad = ctx.createLinearGradient(drawX, drawY, drawX + b.width, drawY + b.height);
+            let grad = ctx.createLinearGradient(b.x, drawY, b.x + b.width, drawY + b.height);
             grad.addColorStop(0, '#f1c40f');
             grad.addColorStop(1, '#f39c12');
             ctx.fillStyle = grad;
-            ctx.fillRect(drawX, drawY, b.width, b.height);
+            ctx.fillRect(b.x, drawY, b.width, b.height);
 
             ctx.fillStyle = '#fff';
             ctx.font = 'bold 22px Arial';
-            ctx.fillText('?', drawX + 14, drawY + 28);
+            ctx.fillText('?', b.x + 14, drawY + 28);
         }
-
         ctx.strokeStyle = 'rgba(0,0,0,0.3)';
         ctx.lineWidth = 3;
-        ctx.strokeRect(drawX, drawY, b.width, b.height);
-        ctx.restore();
-
+        ctx.strokeRect(b.x, drawY, b.width, b.height);
         if (b.bounce < 0) b.bounce += 1;
     });
 }
 
-function drawEnemies() {
-    enemies.forEach(e => {
-        if (!e.alive) return;
-        let drawX = e.x - cameraX;
-
-        ctx.save();
-        let grad = ctx.createRadialGradient(
-            drawX + 15, e.y + 15, 5,
-            drawX + 15, e.y + 15, 20
-        );
-        grad.addColorStop(0, '#ff4e50');
-        grad.addColorStop(1, '#f9d423');
-
-        ctx.fillStyle = grad;
-        ctx.beginPath();
-        ctx.arc(drawX + e.width/2, e.y + e.height/2, e.width/2, 0, Math.PI * 2);
-        ctx.fill();
-
-        ctx.fillStyle = '#000';
-        ctx.fillRect(drawX + 8, e.y + 10, 5, 5);
-        ctx.fillRect(drawX + 20, e.y + 10, 5, 5);
-        ctx.restore();
-    });
-}
-
-function drawElevator() {
-    let drawX = elevator.x - cameraX;
-    ctx.save();
-    ctx.fillStyle = '#34495e';
-    ctx.fillRect(drawX, elevator.y, elevator.width, elevator.height);
+function drawEnemy() {
+    if (!enemy.alive) return;
     
-    ctx.fillStyle = '#111';
-    ctx.fillRect(drawX + 5, elevator.y + 10, elevator.width - 10, elevator.height - 10);
+    ctx.save();
+    let grad = ctx.createRadialGradient(
+        enemy.x + 17, enemy.y + 17, 5,
+        enemy.x + 17, enemy.y + 17, 20
+    );
+    grad.addColorStop(0, '#ff4e50');
+    grad.addColorStop(1, '#f9d423');
+    ctx.fillStyle = grad;
+    ctx.beginPath();
+    ctx.arc(enemy.x + enemy.width/2, enemy.y + enemy.height/2, enemy.width/2, 0, Math.PI * 2);
+    ctx.fill();
 
-    let doorWidth = (elevator.width - 10) / 2 * elevator.doorProgress;
-    ctx.fillStyle = '#7f8c8d';
-    ctx.fillRect(drawX + 5, elevator.y + 10, doorWidth, elevator.height - 10);
-    ctx.fillRect(drawX + elevator.width - 5 - doorWidth, elevator.y + 10, doorWidth, elevator.height - 10);
-
-    ctx.strokeStyle = '#ecf0f1';
-    ctx.lineWidth = 4;
-    ctx.strokeRect(drawX, elevator.y, elevator.width, elevator.height);
+    ctx.fillStyle = '#000';
+    ctx.fillRect(enemy.x + 8, enemy.y + 10, 5, 5);
+    ctx.fillRect(enemy.x + 20, enemy.y + 10, 5, 5);
     ctx.restore();
 }
 
@@ -635,9 +547,114 @@ function drawParticles() {
         p.y += p.vy;
         p.alpha -= 0.02;
 
-        ctx.fillStyle = `rgba(${p.color || '241, 196, 15'}, ${p.alpha})`;
+        ctx.fillStyle = `rgba(241, 196, 15, ${p.alpha})`;
         ctx.beginPath();
-        ctx.arc(p.x - cameraX, p.y, p.size, 0, Math.PI * 2);
+        ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
         ctx.fill();
 
-        if (p.al
+        if (p.alpha <= 0) particles.splice(index, 1);
+    });
+}
+
+function update() {
+    if (!isGameActive) return;
+
+    gameTime += 0.05;
+
+    if (keys.left) player.vx = -player.speed;
+    else if (keys.right) player.vx = player.speed;
+    else player.vx *= 0.8;
+
+    player.vy += gravity;
+    player.x += player.vx;
+    player.y += player.vy;
+
+    if (player.x < 0) player.x = 0;
+    if (player.x + player.width > canvas.width) player.x = canvas.width - player.width;
+
+    if (player.y + player.height >= groundY) {
+        player.y = groundY - player.height;
+        player.vy = 0;
+        player.grounded = true;
+    } else {
+        player.grounded = false;
+    }
+
+    if (keys.jump && player.grounded) {
+        player.vy = player.jumpPower;
+        player.grounded = false;
+    }
+
+    blocks.forEach(b => {
+        if (
+            player.x < b.x + b.width &&
+            player.x + player.width > b.x &&
+            player.y < b.y + b.height &&
+            player.y + player.height > b.y
+        ) {
+            if (player.vy < 0 && player.y > b.y + b.height - 12) {
+                player.vy = 2;
+                if (!b.hit) {
+                    b.hit = true;
+                    b.bounce = -8;
+                    coins++;
+                    coinDisplay.innerText = coins;
+                    spawnParticles(b.x + b.width/2, b.y);
+                }
+            } else if (player.vy > 0 && player.y + player.height - player.vy <= b.y) {
+                player.y = b.y - player.height;
+                player.vy = 0;
+                player.grounded = true;
+            }
+        }
+    });
+
+    if (enemy.alive) {
+        enemy.x += enemy.vx;
+        if (enemy.x <= enemy.startX - 120 || enemy.x >= enemy.startX + 120) {
+            enemy.vx *= -1;
+        }
+
+        if (
+            player.x < enemy.x + enemy.width &&
+            player.x + player.width > enemy.x &&
+            player.y < enemy.y + enemy.height &&
+            player.y + player.height > enemy.y
+        ) {
+            if (player.vy > 0 && player.y + player.height - player.vy <= enemy.y + 15) {
+                enemy.alive = false;
+                player.vy = -9;
+            } else {
+                triggerGameOver();
+            }
+        }
+    }
+}
+
+function spawnParticles(x, y) {
+    for (let i = 0; i < 12; i++) {
+        particles.push({
+            x: x, y: y,
+            vx: (Math.random() - 0.5) * 6,
+            vy: (Math.random() - 0.5) * 6 - 2,
+            size: 3 + Math.random() * 4,
+            alpha: 1
+        });
+    }
+}
+
+function triggerGameOver() {
+    isGameActive = false;
+    gameOverScreen.classList.remove('hidden');
+}
+
+function loop() {
+    if (!isGameActive) return;
+
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    drawSun();
+    drawClouds();
+    drawGrass();
+    drawBlocks();
+    
