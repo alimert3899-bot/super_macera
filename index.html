@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Gerçekçi Mario - Ana Menü ve Bölümler</title>
+    <title>Gerçekçi Mario - Dikey Oyun</title>
     <style>
         * {
             box-sizing: border-box;
@@ -40,13 +40,16 @@
             flex-direction: column;
             justify-content: center;
             align-items: center;
-            z-index: 30;
+            z-index: 100;
             background: linear-gradient(to bottom, #2c3e50, #000);
             color: white;
             padding: 20px;
             text-align: center;
         }
-        .hidden { display: none !important; }
+        .screen.hidden {
+            display: none !important;
+            pointer-events: none;
+        }
 
         /* Ana Menü */
         .main-title {
@@ -69,6 +72,7 @@
             cursor: pointer;
             box-shadow: 0 4px 10px rgba(0,0,0,0.3);
             transition: 0.2s;
+            z-index: 105;
         }
         .menu-btn:active { transform: scale(0.95); }
         .menu-btn.settings-btn { background: #e67e22; }
@@ -93,15 +97,14 @@
             font-weight: bold;
             cursor: pointer;
             transition: 0.2s;
+            z-index: 105;
         }
         .level-card.locked {
             background: rgba(100, 100, 100, 0.3);
             border-color: #555;
             color: #777;
-            cursor: not-allowed;
         }
-        .level-card:not(.locked):active {
-            background: rgba(46, 204, 113, 0.5);
+        .level-card:active {
             transform: scale(0.95);
         }
 
@@ -114,12 +117,16 @@
             flex-direction: column;
             justify-content: center;
             align-items: center;
-            z-index: 50;
+            z-index: 200;
             padding: 20px;
+        }
+        .modal.hidden {
+            display: none !important;
+            pointer-events: none;
         }
         .warning-text {
             color: #e74c3c;
-            font-size: 22px;
+            font-size: 20px;
             font-weight: bold;
             text-align: center;
             margin-bottom: 25px;
@@ -135,6 +142,7 @@
             border-radius: 20px;
             font-weight: bold;
             cursor: pointer;
+            z-index: 205;
         }
 
         /* Oyun İçi Arayüz ve Canvas */
@@ -142,6 +150,7 @@
             position: absolute;
             top: 0; left: 0; width: 100%; height: 100%;
             background: linear-gradient(to bottom, #3a7bd5, #3a6073);
+            z-index: 50;
         }
         canvas {
             width: 100%;
@@ -156,7 +165,7 @@
             font-size: 20px;
             font-weight: bold;
             text-shadow: 2px 2px 4px rgba(0,0,0,0.8);
-            z-index: 10;
+            z-index: 60;
         }
         .back-menu-btn {
             position: absolute;
@@ -169,7 +178,7 @@
             border-radius: 8px;
             font-weight: bold;
             cursor: pointer;
-            z-index: 10;
+            z-index: 60;
         }
         .controls {
             position: absolute;
@@ -179,7 +188,7 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            z-index: 10;
+            z-index: 60;
         }
         .d-pad { display: flex; gap: 15px; }
         .btn {
@@ -204,29 +213,27 @@
     <!-- 1. ANA MENÜ EKRANI -->
     <div id="main-menu" class="screen">
         <h1 class="main-title">GERÇEKÇİ MARIO</h1>
-        <button class="menu-btn" onclick="openLevelSelect()">BAŞLA</button>
-        <button class="menu-btn settings-btn" onclick="openSettingsWarning()">AYARLAR</button>
+        <button class="menu-btn" id="start-btn">BAŞLA</button>
+        <button class="menu-btn settings-btn" id="settings-btn">AYARLAR</button>
     </div>
 
     <!-- 2. BÖLÜM SEÇİM EKRANI -->
     <div id="level-select-screen" class="screen hidden">
         <h2 style="margin-bottom: 20px; color:#f1c40f;">BÖLÜM SEÇ</h2>
-        <div class="levels-grid" id="levels-container">
-            <!-- JavaScript ile 8 bölüm dinamik oluşturulacak -->
-        </div>
-        <button class="menu-btn" style="margin-top: 30px; width: 140px; font-size: 16px; background:#555;" onclick="backToMainMenu()">Geri</button>
+        <div class="levels-grid" id="levels-container"></div>
+        <button class="menu-btn" id="back-to-main-btn" style="margin-top: 30px; width: 140px; font-size: 16px; background:#555;">Geri</button>
     </div>
 
-    <!-- 3. GENEL UYARI MODALI (Ayarlar ve Kilitli Bölümler İçin) -->
+    <!-- 3. GENEL UYARI MODALI -->
     <div id="warning-modal" class="modal hidden">
         <div class="warning-text" id="warning-msg">Gelecek güncellemelerde gelecek. Şu anda kullanılamaz</div>
-        <button class="modal-btn" onclick="closeWarning()">Tamam</button>
+        <button class="modal-btn" id="warning-close-btn">Tamam</button>
     </div>
 
     <!-- 4. OYUN EKRANI -->
     <div id="game-screen" class="screen hidden" style="padding:0; background:none;">
         <div class="hud">Altın: <span id="coin-count">0</span></div>
-        <button class="back-menu-btn" onclick="backToMainMenu()">Menü</button>
+        <button class="back-menu-btn" id="in-game-back-btn">Menü</button>
         <canvas id="canvas"></canvas>
         
         <div class="controls">
@@ -237,12 +244,12 @@
             <div class="btn btn-jump" id="btn-jump">▲</div>
         </div>
 
-        <!-- Game Over / Bölüm Bitti Modalleri -->
+        <!-- Game Over Modali -->
         <div id="game-over" class="modal hidden" style="background:rgba(0,0,0,0.75);">
             <h1 style="font-size:36px; color:#e74c3c; margin-bottom:10px;">ÖLDÜN!</h1>
             <p>Yaratığa değdin veya boşluğa düştün.</p>
-            <button class="modal-btn" style="background:#2ecc71; margin-top:15px;" onclick="restartGame()">Tekrar Dene</button>
-            <button class="modal-btn" style="background:#555; margin-top:10px;" onclick="backToMainMenu()">Ana Menü</button>
+            <button class="modal-btn" id="restart-btn" style="background:#2ecc71; margin-top:15px;">Tekrar Dene</button>
+            <button class="modal-btn" id="game-over-menu-btn" style="background:#555; margin-top:10px;">Ana Menü</button>
         </div>
     </div>
 
@@ -254,35 +261,62 @@ const ctx = canvas.getContext('2d');
 canvas.width = 420;
 canvas.height = 750;
 
-// Ekran Yönetim Elementleri
+// Ekran Elementleri
 const mainMenu = document.getElementById('main-menu');
 const levelSelectScreen = document.getElementById('level-select-screen');
 const gameScreen = document.getElementById('game-screen');
 const warningModal = document.getElementById('warning-modal');
 const warningMsg = document.getElementById('warning-msg');
+const warningCloseBtn = document.getElementById('warning-close-btn');
 const gameOverScreen = document.getElementById('game-over');
 const coinDisplay = document.getElementById('coin-count');
 
-// Seviyeleri Oluştur (Toplam 8 Bölüm)
+// Buton Olayları (Event Listeners ile garantiye alındı)
+document.getElementById('start-btn').addEventListener('click', () => {
+    mainMenu.classList.add('hidden');
+    levelSelectScreen.classList.remove('hidden');
+});
+
+document.getElementById('settings-btn').addEventListener('click', () => {
+    showWarning("Gelecek güncellemelerde gelecek. Şu anda kullanılamaz.");
+});
+
+document.getElementById('back-to-main-btn').addEventListener('click', () => {
+    backToMainMenu();
+});
+
+document.getElementById('in-game-back-btn').addEventListener('click', () => {
+    backToMainMenu();
+});
+
+warningCloseBtn.addEventListener('click', () => {
+    warningModal.classList.add('hidden');
+});
+
+document.getElementById('restart-btn').addEventListener('click', () => {
+    restartGame();
+});
+
+document.getElementById('game-over-menu-btn').addEventListener('click', () => {
+    backToMainMenu();
+});
+
+// 8 Bölümü Oluştur
 const levelsContainer = document.getElementById('levels-container');
+levelsContainer.innerHTML = '';
 for (let i = 1; i <= 8; i++) {
     const card = document.createElement('div');
     card.classList.add('level-card');
     if (i > 1) card.classList.add('locked');
     card.innerText = i;
-    card.onclick = () => {
+    card.addEventListener('click', () => {
         if (i === 1) {
             startLevel(1);
         } else {
             showWarning("Gelecek güncellemelerde gelecek. Şu anda kullanılamaz.");
         }
-    };
+    });
     levelsContainer.appendChild(card);
-}
-
-function openLevelSelect() {
-    mainMenu.classList.add('hidden');
-    levelSelectScreen.classList.remove('hidden');
 }
 
 function backToMainMenu() {
@@ -290,11 +324,8 @@ function backToMainMenu() {
     gameScreen.classList.add('hidden');
     gameOverScreen.classList.add('hidden');
     levelSelectScreen.classList.add('hidden');
+    warningModal.classList.add('hidden');
     mainMenu.classList.remove('hidden');
-}
-
-function openSettingsWarning() {
-    showWarning("Gelecek güncellemelerde gelecek. Şu anda kullanılamaz.");
 }
 
 function showWarning(text) {
@@ -302,11 +333,7 @@ function showWarning(text) {
     warningModal.classList.remove('hidden');
 }
 
-function closeWarning() {
-    warningModal.classList.add('hidden');
-}
-
-// --- OYUN DEĞİŞKENLERİ VE MEKANİKLERİ ---
+// Oyun Değişkenleri
 let isGameActive = false;
 let coins = 0;
 let gameTime = 0;
@@ -314,20 +341,17 @@ const keys = { left: false, right: false, jump: false };
 const gravity = 0.55;
 const groundY = 620;
 
-// Yeşil Mario Karakteri
 const player = {
     x: 50, y: 500, width: 32, height: 48,
     vx: 0, vy: 0, speed: 4.5, jumpPower: -12.5, grounded: false
 };
 
-// 1. Bölüm için Parkur Platformları/Blokları (Kısa ve Kolay)
 const blocks = [
     { x: 100, y: 480, width: 40, height: 40, hit: false, bounce: 0 },
     { x: 220, y: 400, width: 40, height: 40, hit: false, bounce: 0 },
     { x: 310, y: 480, width: 40, height: 40, hit: false, bounce: 0 }
 ];
 
-// Devriye Gezen Düşman (Üstüne basınca ölen)
 const enemy = {
     startX: 250,
     x: 250,
@@ -392,7 +416,7 @@ function restartGame() {
     isGameActive = true;
 }
 
-// --- ÇİZİM FONKSİYONLARI ---
+// Çizim Fonksiyonları
 function drawSun() {
     let gradient = ctx.createRadialGradient(340, 70, 10, 340, 70, 80);
     gradient.addColorStop(0, 'rgba(255, 255, 220, 1)');
@@ -446,7 +470,6 @@ function drawGrass() {
     });
 }
 
-// Çok Gerçekçi, Yeşil Mario Karakteri
 function drawPlayer() {
     ctx.save();
     ctx.fillStyle = 'rgba(0,0,0,0.3)';
@@ -454,14 +477,12 @@ function drawPlayer() {
     ctx.ellipse(player.x + player.width/2, groundY, player.width/2, 4, 0, 0, Math.PI * 2);
     ctx.fill();
 
-    // Tulum Kıyafeti (Koyu Yeşil / Mavi Detay)
     let bodyGrad = ctx.createLinearGradient(player.x, player.y, player.x + player.width, player.y + player.height);
     bodyGrad.addColorStop(0, '#00b09b'); 
     bodyGrad.addColorStop(1, '#96c93d');
     ctx.fillStyle = bodyGrad;
     ctx.fillRect(player.x + 4, player.y + 16, player.width - 8, player.height - 16);
 
-    // İkonik Yeşil Mario Şapkası ve Yüzü
     let headGrad = ctx.createLinearGradient(player.x, player.y, player.x, player.y + 16);
     headGrad.addColorStop(0, '#0ba360');
     headGrad.addColorStop(1, '#3cba92');
@@ -470,7 +491,6 @@ function drawPlayer() {
     ctx.arc(player.x + player.width/2, player.y + 12, 12, 0, Math.PI * 2);
     ctx.fill();
 
-    // Gözler
     ctx.fillStyle = '#fff';
     ctx.fillRect(player.x + 18, player.y + 8, 4, 4);
     ctx.restore();
@@ -515,7 +535,6 @@ function drawEnemy() {
     ctx.arc(enemy.x + enemy.width/2, enemy.y + enemy.height/2, enemy.width/2, 0, Math.PI * 2);
     ctx.fill();
 
-    // Kızgın Bakışlar
     ctx.fillStyle = '#000';
     ctx.fillRect(enemy.x + 8, enemy.y + 10, 5, 5);
     ctx.fillRect(enemy.x + 20, enemy.y + 10, 5, 5);
@@ -537,13 +556,11 @@ function drawParticles() {
     });
 }
 
-// --- GÜNCELLEME VE FİZİK ---
 function update() {
     if (!isGameActive) return;
 
     gameTime += 0.05;
 
-    // Yatay Hareket
     if (keys.left) player.vx = -player.speed;
     else if (keys.right) player.vx = player.speed;
     else player.vx *= 0.8;
@@ -552,11 +569,9 @@ function update() {
     player.x += player.vx;
     player.y += player.vy;
 
-    // Sınırlar
     if (player.x < 0) player.x = 0;
     if (player.x + player.width > canvas.width) player.x = canvas.width - player.width;
 
-    // Zemin
     if (player.y + player.height >= groundY) {
         player.y = groundY - player.height;
         player.vy = 0;
@@ -565,13 +580,11 @@ function update() {
         player.grounded = false;
     }
 
-    // Zıplama
     if (keys.jump && player.grounded) {
         player.vy = player.jumpPower;
         player.grounded = false;
     }
 
-    // Blok Etkileşimi
     blocks.forEach(b => {
         if (
             player.x < b.x + b.width &&
@@ -596,27 +609,22 @@ function update() {
         }
     });
 
-    // Yaratık Hareketi ve Lastik Gibi Gidip Gelmesi
     if (enemy.alive) {
         enemy.x += enemy.vx;
-        // Belirli bir alanda veya duvarlarda lastik gibi gidip gelsin
         if (enemy.x <= enemy.startX - 120 || enemy.x >= enemy.startX + 120) {
             enemy.vx *= -1;
         }
 
-        // Çarpışma Kontrolü
         if (
             player.x < enemy.x + enemy.width &&
             player.x + player.width > enemy.x &&
             player.y < enemy.y + enemy.height &&
             player.y + player.height > enemy.y
         ) {
-            // Eğer yukarıdan düşüyorsak (Üstüne bastıysak)
             if (player.vy > 0 && player.y + player.height - player.vy <= enemy.y + 15) {
-                enemy.alive = false; // Yaratık ölür
-                player.vy = -9;      // Karakter hafif yukarı zıplar
+                enemy.alive = false;
+                player.vy = -9;
             } else {
-                // Yandan veya alttan çarptıysak oyuncu ölür
                 triggerGameOver();
             }
         }
@@ -640,8 +648,13 @@ function triggerGameOver() {
     gameOverScreen.classList.remove('hidden');
 }
 
-// Ana Render Döngüsü
 function loop() {
     if (!isGameActive) return;
 
-    ctx.clearRect(0, 0, canvas.width, 
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    drawSun();
+    drawClouds();
+    drawGrass();
+    drawBlocks();
+    
